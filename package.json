@@ -1,0 +1,26 @@
+{
+  "name": "riscv.github.io",
+  "version": "0.1.0",
+  "description": "https://riscv.github.io",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build_v": "datasheet -i ./node_modules/riscv-v-spec/v-spec.adoc -o v-spec/v-spec.pdf",
+    "build": "npm run build_v"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/riscv/riscv.github.io.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/riscv/riscv.github.io/issues"
+  },
+  "homepage": "https://github.com/riscv/riscv.github.io#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "datasheet": "^0.3.1",
+    "riscv-v-spec": "github:riscv/riscv-v-spec"
+  }
+}
