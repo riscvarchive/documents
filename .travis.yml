@@ -15,6 +15,6 @@ deploy:
   skip-cleanup: true
   github-token: $github_access_token
   keep-history: true
-  local-dir: v-spec
+  local-dir: public
   on:
     branch: master
