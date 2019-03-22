@@ -1,5 +1,5 @@
 node_modules
 package-lock.json
-v-spec
+public
 build
 *.pdf
