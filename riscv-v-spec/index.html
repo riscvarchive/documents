@@ -640,8 +640,8 @@ Address  Privilege Name   Description
 0x008    URW       vstart Vector start position
 0x009    URW       vxsat  Fixed-Point Saturate Flag
 0x00A    URW       vxrm   Fixed-Point Rounding Mode
-0x00B    URW       vtype  Vector data type register
-0xC20    URO       vl     Vector length</pre>
+0xC20    URO       vl     Vector length
+0xC21    URO       vtype  Vector data type register</pre>
 </div>
 </div>
 <div class="sect2">
@@ -807,24 +807,40 @@ faster.
 <div class="sect2">
 <h3 id="_vector_type_register_vtype">3.6. Vector type register, <code>vtype</code></h3>
 <div class="paragraph">
-<p>The XLEN-wide <em>vector</em> <em>type</em> CSR, <code>vtype</code> provides the default type
+<p>The read-only XLEN-wide <em>vector</em> <em>type</em> CSR, <code>vtype</code>, can only be
+updated by <code>vsetvl{i}</code> instructions, and provides the default type
 used to interpret the contents of the vector register file. The vector
 type also determines the organization of elements in each vector
 register, and how multiple vector registers are grouped.</p>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Earlier drafts allowed the <code>vtype</code> register to be written using
+regular CSR writes.  Allowing updates only via the <code>vsetvl{i}</code>
+instructions simplifies maintenance of the <code>vtype</code> register state.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
-<p>In the base vector extension, the <code>type</code> register has two fields,
-<code>vsew[2:0]</code>, and <code>vlmul</code>.</p>
+<p>In the base vector extension, the <code>type</code> register has three fields,
+<code>vill</code>, <code>vsew[2:0]</code>, and <code>vlmul[1:0]</code>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre>vtype register layout
 
-    bits    contents
-XLEN-1:7    Reserved (write 0)
-     6:5    vediv[1:0]      # Used by EDIV extension
-     4:2    vsew[2:0]
-     1:0    vlmul[1:0]</pre>
+    Bits  Name        Description
+  XLEN-1  vill        Illegal value if set
+XLEN-2:7              Reserved (write 0)
+     6:5  vediv[1:0]  Used by EDIV extension
+     4:2  vsew[2:0]   Standard element width (SEW) setting
+     1:0  vlmul[1:0]  Vector register group multiplier (LMUL) setting</pre>
 </div>
 </div>
 <div class="admonitionblock note">
@@ -834,8 +850,11 @@ XLEN-1:7    Reserved (write 0)
 <div class="title">Note</div>
 </td>
 <td class="content">
-The smallest base implementation has only four bits in <code>vtype</code>,
-two bits for <code>vsew[1:0]</code> and two bits for <code>vlmul[1:0]</code>.
+The smallest base implementation requires storage for only four
+bits of storage in <code>vtype</code>, two bits for <code>vsew[1:0]</code> and two bits for
+<code>vlmul[1:0]</code>.  The illegal value can be encoded using the illegal
+64-bit combination in <code>vsew[1:0]</code> without requiring an additional
+storage bit.
 </td>
 </tr>
 </table>
@@ -977,6 +996,36 @@ v0.7, the floating-point registers are separate again.
 <div class="paragraph">
 <p>Mask register instructions always operate on a single vector register,
 regardless of LMUL setting.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_vector_type_illegal_vill">3.6.3. Vector Type Illegal <code>vill</code></h4>
+<div class="paragraph">
+<p>The <code>vill</code> bit is used to encode that a previous <code>vsetvl{i}</code>
+instruction attempted to write an unsupported value to <code>vtype</code>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The <code>vill</code> bit is held in bit XLEN-1 of the CSR to support
+checking for illegal values with a branch on the sign bit.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>If the <code>vill</code> bit is set, then any attempt to execute a vector
+instruction (other than a vector configuration instruction) will raise
+an illegal instruction exception.</p>
+</div>
+<div class="paragraph">
+<p>When <code>vill</code> bit is set, the remaining fields in <code>vtype</code> will hold
+values that are the "closest" legal value to the requested setting as
+described below in the description of <code>vsetvl{i}</code>.</p>
 </div>
 </div>
 </div>
@@ -1215,7 +1264,7 @@ In most implementations, the striping distance SLEN &#8805; ELEN.
  v4*n+2              D       C       5       4
  v4*n+3              F       E       7       6
 
- Example 3: VLEN=128b, SLEN=128b, SEW=32b, LMUL=4
+ Example 4: VLEN=128b, SLEN=128b, SEW=32b, LMUL=4
 
  Byte          F E D C B A 9 8 7 6 5 4 3 2 1 0
  v4*n                3       2       1       0   32b elements
@@ -1223,7 +1272,7 @@ In most implementations, the striping distance SLEN &#8805; ELEN.
  v4*n+2              B       A       9       8
  v4*n+3              F       E       D       C
 
- Example 4: VLEN=256b, SLEN=128b, SEW=32b, LMUL=4
+ Example 5: VLEN=256b, SLEN=128b, SEW=32b, LMUL=4
 
  Byte     1F1E1D1C1B1A19181716151413121110 F E D C B A 9 8 7 6 5 4 3 2 1 0
  v4*n           13      12      11      10       3       2       1       0
@@ -1231,7 +1280,7 @@ In most implementations, the striping distance SLEN &#8805; ELEN.
  v4*n+2         1B      1A      19      18       B       A       9       8
  v4*n+3         1F      1E      1D      1C       F       E       D       C
 
- Example 5: VLEN=256b, SLEN=128b, SEW=256b, LMUL=4
+ Example 6: VLEN=256b, SLEN=128b, SEW=256b, LMUL=4
 
  Byte     1F1E1D1C1B1A19181716151413121110 F E D C B A 9 8 7 6 5 4 3 2 1 0
  v4*n                                                                    0
@@ -2006,11 +2055,12 @@ arguments, and writes the new value of <code>vl</code> into <code>rd</code>.</p>
 <div class="content">
 <pre>vtype register layout
 
-    bits    contents
-XLEN-1:7    Reserved (write 0)
-     6:5    vediv[1:0]      # Used by EDIV extension
-     4:2    vsew[2:0]
-     1:0    vlmul[1:0]</pre>
+    Bits  Name        Description
+  XLEN-1  vill        Illegal value if set
+XLEN-2:7              Reserved (write 0)
+     6:5  vediv[1:0]  Used by EDIV extension
+     4:2  vsew[2:0]   Standard element width (SEW) setting
+     1:0  vlmul[1:0]  Vector register group multiplier (LMUL) setting</pre>
 </div>
 </div>
 <div class="listingblock">
@@ -2040,29 +2090,29 @@ Examples:
 </div>
 </div>
 <div class="paragraph">
-<p>The <code>vtype</code> setting must be supported by the implementation, and the
- <code>vsetvl{i}</code> instructions will raise an illegal instruction exception
- if the setting is not supported.</p>
+<p>If the <code>vtype</code> setting is not supported by the implementation, then
+the <code>vill</code> bit is set in <code>vtype</code>, and the other defined fields are set
+to the "closest" supported value as defined below:</p>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-Specifing that <code>vtype</code> is WARL is problematic as that would hide
-errors.  The current spec is problematic in that it requires a trap
-based on a data value in a CSR write. It would simplify pipelines if
-<code>vtype</code> value errors were flagged at use not write, but somehow need
-to catch errant code without requiring full XLEN bits in <code>vtype</code> when
-only a few bits are actually used. One alternative is to allow
-substitution of a fixed illegal value in <code>vtype</code>, e.g., all 1s, if an
-attempt is made to write an unsupported value.  This would then cause
-a trap on use.
-</td>
-</tr>
-</table>
+<div class="ulist">
+<ul>
+<li>
+<p><code>vsew</code> is set to the largest legal value smaller than the requested
+setting</p>
+</li>
+<li>
+<p><code>vlmul</code> is set to the requested value, as all LMUL settings must be supported</p>
+</li>
+<li>
+<p><code>vediv</code> is set to the largest legal value equal to or smaller than the requested subdivide for the value that is in <code>vsew</code> (this might not be the requested <code>vsew</code>)</p>
+</li>
+<li>
+<p>unused bits in <code>vtype</code> are set to zero.</p>
+</li>
+<li>
+<p>The <code>vl</code> CSR is set to zero if the requested <code>vtype</code> is illegal.</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p>The requested application vector length (AVL) is passed in <code>rs1</code> as an
@@ -2078,6 +2128,22 @@ an infinite AVL, and so requests the maximum possible vector length.</p>
 <td class="content">
 A <code>vsetvl</code> with AVL=<code>x0</code> can be used to read current VLMAX,
 though this does overwrite <code>vl</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Earlier drafts required a trap when setting <code>vtype</code> to an
+illegal value.  However, this would have added the first
+data-dependent trap on a CSR write to the ISA.  The current scheme
+also supports light-weight runtime interrogation of the supported
+vector unit configurations.
 </td>
 </tr>
 </table>
@@ -6198,11 +6264,12 @@ the <code>vtype</code> register.</p>
 <div class="content">
 <pre>vtype register layout
 
-    bits    contents
-XLEN-1:7    Reserved (write 0)
-     6:5    vediv[1:0]      # Used by EDIV extension
-     4:2    vsew[2:0]
-     1:0    vlmul[1:0]</pre>
+    Bits  Name        Description
+  XLEN-1  vill        Illegal value if set
+XLEN-2:7              Reserved (write 0)
+     6:5  vediv[1:0]  Used by EDIV extension
+     4:2  vsew[2:0]   Standard element width (SEW) setting
+     1:0  vlmul[1:0]  Vector register group multiplier (LMUL) setting</pre>
 </div>
 </div>
 <div class="paragraph">
