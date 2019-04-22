@@ -309,6 +309,7 @@ h2 {
 <li><a href="#_vector_fixed_point_fields_in_fcsr">3.5. Vector Fixed-Point Fields in <code>fcsr</code></a></li>
 <li><a href="#_vector_type_register_vtype">3.6. Vector type register, <code>vtype</code></a></li>
 <li><a href="#_vector_length_register_vl">3.7. Vector Length Register <code>vl</code></a></li>
+<li><a href="#_state_of_vector_extension_at_reset">3.8. State of Vector Extension at Reset</a></li>
 </ul>
 </li>
 <li><a href="#_mapping_of_vector_elements_to_vector_register_state">4. Mapping of Vector Elements to Vector Register State</a>
@@ -468,12 +469,12 @@ h2 {
 <div class="sectionbody">
 <div class="paragraph">
 <p>Contributors include: Alon Amid, Krste Asanovic, Allen Baum, Alex
-Bradbury, Tony Brewer, Chris Celio, Silviu Chiricescu, Ken Dockser,
-Bob Dreyer, Roger Espasa, Sean Halle, John Hauser, David Horner, Bruce
-Hoult, Bill Huffman, Constantine Korikov, Ben Korpan, Robin Kruppe,
-Yunsup Lee, Guy Lemieux, Rich Newell, Albert Ou, David Patterson,
-Colin Schmidt, Alex Solomatnikov, Steve Wallach, Andrew Waterman, Jim
-Wilson.</p>
+Bradbury, Tony Brewer, Chris Celio, Aliaksei Chapyzhenka, Silviu
+Chiricescu, Ken Dockser, Bob Dreyer, Roger Espasa, Sean Halle, John
+Hauser, David Horner, Bruce Hoult, Bill Huffman, Constantine Korikov,
+Ben Korpan, Robin Kruppe, Yunsup Lee, Guy Lemieux, Filip Moc, Rich
+Newell, Albert Ou, David Patterson, Colin Schmidt, Alex Solomatnikov,
+Steve Wallach, Andrew Waterman, Jim Wilson.</p>
 </div>
 <div class="paragraph">
 <p>Known issues with current version:</p>
@@ -632,18 +633,55 @@ RISC-V ISA.  If the base scalar ISA does not include floating-point,
 then a <code>fcsr</code> register is also added to hold mirrors of the <code>vxsat</code>
 and <code>vxrm</code> CSRs as explained below.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>New vector CSRs
-
-Address  Privilege Name   Description
-0x008    URW       vstart Vector start position
-0x009    URW       vxsat  Fixed-Point Saturate Flag
-0x00A    URW       vxrm   Fixed-Point Rounding Mode
-0xC20    URO       vl     Vector length
-0xC21    URO       vtype  Vector data type register</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. New vector CSRs</caption>
+<colgroup>
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+<col style="width: 62.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Address</th>
+<th class="tableblock halign-left valign-top">Privilege</th>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0x008</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">URW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vstart</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vector start position</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0x009</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">URW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vxsat</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fixed-Point Saturate Flag</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0x00A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">URW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vxrm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fixed-Point Rounding Mode</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0xC20</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">URO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vl</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vector length</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0xC21</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">URO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vtype</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vector data type register</p></td>
+</tr>
+</tbody>
+</table>
 <div class="sect2">
 <h3 id="_vector_registers">3.1. Vector Registers</h3>
 <div class="paragraph">
@@ -688,14 +726,27 @@ element number given in the <code>vstart</code> CSR, leaving earlier elements in
 the destination vector undisturbed, and to reset the <code>vstart</code> CSR to
 zero at the end of execution.</p>
 </div>
-<div class="paragraph">
-<p>If the value in the <code>vstart</code> register is greater than or equal to the
-vector length <code>vl</code> then no element operations are performed, though
-elements at the end of the destination vector past <code>vl</code> are zeroed,
-and the <code>vstart</code> register is reset to zero.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+All vector instructions, including <code>vsetvl{i}</code>, reset the <code>vstart</code>
+CSR to zero.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
-<p>The <code>vstart</code> CSR is defined to have only enough writeable bits to hold
+<p>If the value in the <code>vstart</code> register is greater than or equal to the
+vector length <code>vl</code> then no element operations are performed, nor are the
+elements at the end of the destination vector past <code>vl</code> zeroed.  The
+<code>vstart</code> register is then reset to zero.</p>
+</div>
+<div class="paragraph">
+<p>The <code>vstart</code> CSR is defined to have only enough writable bits to hold
 the largest element index (one less than the maximum VLMAX) or
 lg2(VLEN) bits.  The upper bits of the <code>vstart</code> CSR are hardwired to
 zero (reads zero, writes ignored).</p>
@@ -734,19 +785,50 @@ also reflected as a field in the upper bits of <code>fcsr</code>.  Systems
 without floating-point must add <code>fcsr</code> when adding the vector
 extension.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>vxrm encoding
-
-Bits   Abbreviation  Rounding Mode
-[1:0]
- 00    rnu           round-to-nearest-up (add +0.5 LSB)
- 01    rne           round-to-nearest-even
- 10    rdn           round-down (truncate)
- 11    rod           round-to-odd (OR bits into LSB, aka "jam")
-
-Bits[XLEN-1:2] should be written as zeros.</pre>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 2. vxrm encoding</caption>
+<colgroup>
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 25%;">
+<col style="width: 62.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="2">Bits [1:0]</th>
+<th class="tableblock halign-left valign-top">Abbreviation</th>
+<th class="tableblock halign-left valign-top">Rounding Mode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rnu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">round-to-nearest-up (add +0.5 LSB)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rne</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">round-to-nearest-even</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rdn</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">round-down (truncate)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rod</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">round-to-odd (OR bits into LSB, aka "jam")</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Bits[XLEN-1:2] should be written as zeros.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -779,17 +861,43 @@ into a destination format.</p>
 in the floating-point CSR, <code>fcsr</code>.  The <code>fcsr</code> register must be added
 to systems without floating-point that add a vector extension.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>fcsr layout
-
-Bits    Name    Description
-10:9    vxrm    Fixed-point rounding mode
-   8    vxsat   Fixed-point accrued saturation flag
- 7:5    frm     Floating-point rounding mode
- 4:0    fflags  Floating-point accrued exception flags</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 3. fcsr layout</caption>
+<colgroup>
+<col style="width: 12.5%;">
+<col style="width: 25%;">
+<col style="width: 62.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Bits</th>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10:9</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vxrm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fixed-point rounding mode</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vxsat</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fixed-point accrued saturation flag</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">7:5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">frm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Floating-point rounding mode</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4:0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fflags</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Floating-point accrued exception flags</p></td>
+</tr>
+</tbody>
+</table>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -831,18 +939,48 @@ instructions simplifies maintenance of the <code>vtype</code> register state.
 <p>In the base vector extension, the <code>type</code> register has three fields,
 <code>vill</code>, <code>vsew[2:0]</code>, and <code>vlmul[1:0]</code>.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>vtype register layout
-
-    Bits  Name        Description
-  XLEN-1  vill        Illegal value if set
-XLEN-2:7              Reserved (write 0)
-     6:5  vediv[1:0]  Used by EDIV extension
-     4:2  vsew[2:0]   Standard element width (SEW) setting
-     1:0  vlmul[1:0]  Vector register group multiplier (LMUL) setting</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 4. <code>vtype</code> register layout</caption>
+<colgroup>
+<col style="width: 12.5%;">
+<col style="width: 25%;">
+<col style="width: 62.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Bits</th>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">XLEN-1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vill</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Illegal value if set</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">XLEN-2:7</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Reserved (write 0)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">6:5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vediv[1:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Used by EDIV extension</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4:2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsew[2:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Standard element width (SEW) setting</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1:0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vlmul[1:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vector register group multiplier (LMUL) setting</p></td>
+</tr>
+</tbody>
+</table>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -906,33 +1044,102 @@ to be varied with AVL.
 VLEN / SEW standard-width elements.  In the base vector extension,
 only SEW up to max(XLEN,FLEN) are required to be supported.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>  vsew[2:0] (standard element width) encoding
-
- vsew[2:0]    SEW
-  ---        ----
-  000           8
-  001          16
-  010          32
-  011          64
-  100         128
-  101         256
-  110         512
-  111        1024</pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>  Example VLEN = 128 bits
-
-  SEW  Elements per vector register
-   64     2
-   32     4
-   16     8
-    8    16</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 5. vsew[2:0] (standard element width) encoding</caption>
+<colgroup>
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 81.25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="3">vsew[2:0]</th>
+<th class="tableblock halign-left valign-top">SEW</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">256</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">512</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1024</p></td>
+</tr>
+</tbody>
+</table>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 6. Example VLEN = 128 bits</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">SEW</th>
+<th class="tableblock halign-left valign-top">Elements per vector register</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="sect3">
 <h4 id="_vector_register_grouping_vlmul">3.6.2. Vector Register Grouping (<code>vlmul</code>)</h4>
@@ -950,15 +1157,59 @@ of two set by the <code>vlmul</code> field in <code>vtype</code> (LMUL = 2<sup><
 The maximum vector length possible in a single vector instruction,
 VLMAX, is then increased by a factor of LMUL.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre> vlmul  LMUL  #groups   VLMAX        Grouped registers
- 00       1       32      VLEN/SEW   vn (no group)
- 01       2       16    2*VLEN/SEW   vn, vn+1
- 10       4        8    4*VLEN/SEW   vn, ..., vn+3
- 11       8        4    8*VLEN/SEW   vn, ..., vn+7</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+<col style="width: 31.25%;">
+<col style="width: 31.25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="2">vlmul</th>
+<th class="tableblock halign-left valign-top">LMUL</th>
+<th class="tableblock halign-left valign-top">#groups</th>
+<th class="tableblock halign-left valign-top">VLMAX</th>
+<th class="tableblock halign-left valign-top">Grouped registers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VLEN/SEW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vn (no group)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2*VLEN/SEW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vn, vn+1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4*VLEN/SEW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vn, &#8230;&#8203;, vn+3</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8*VLEN/SEW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vn, &#8230;&#8203;, vn+7</p></td>
+</tr>
+</tbody>
+</table>
 <div class="paragraph">
 <p>When <code>vlmul=01</code>, then vector operations on register <code>v</code> <em>n</em> also
 operate on vector register <code>v</code> <em>n</em>+1, giving twice the vector length
@@ -1023,9 +1274,8 @@ instruction (other than a vector configuration instruction) will raise
 an illegal instruction exception.</p>
 </div>
 <div class="paragraph">
-<p>When <code>vill</code> bit is set, the remaining fields in <code>vtype</code> will hold
-values that are the "closest" legal value to the requested setting as
-described below in the description of <code>vsetvl{i}</code>.</p>
+<p>When the <code>vill</code> bit is set, the other XLEN-1 bits in <code>vtype</code> shall be
+zero.</p>
 </div>
 </div>
 </div>
@@ -1040,8 +1290,21 @@ instruction variants.</p>
 <p>The <code>vl</code> register holds an unsigned integer specifying the number of
 elements to be updated by a vector instruction.  Elements in the
 destination vector with indices &#8805; <code>vl</code> are zeroed during
-execution of a vector instruction.  As a special case, when <code>vl</code>=0,
+execution of a vector instruction.  When <code>vstart</code> &#8805; <code>vl</code>,
 no elements are updated in the destination vector.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+As a consequence, when <code>vl</code>=0, no elements are
+updated in the destination vector, regardless of <code>vstart</code>.
+</td>
+</tr>
+</table>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -1058,6 +1321,47 @@ SEW=8 results in VLMAX of 32).
 </td>
 </tr>
 </table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_state_of_vector_extension_at_reset">3.8. State of Vector Extension at Reset</h3>
+<div class="paragraph">
+<p>The vector extension must have a consistent state at reset.  In
+particular, <code>vtype</code> and <code>vl</code> must have values that can be read and
+then restored with a single <code>vsetvl</code> instruction.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+It is recommended that at reset, <code>vtype.vill</code> is set, the
+remaining bits in <code>vtype</code> are zero, and <code>vl</code> is set to zero.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The <code>vstart</code>, <code>vxrm</code>, <code>vxsat</code> CSRs can have arbitrary values at reset.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Any use of the vector unit will require an initial <code>vsetvl{i}</code>,
+which will reset <code>vstart.  The `vxrm</code> and <code>vxsat</code> fields should be
+reset explicitly in software before use.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The vector registers can have arbitrary values at reset.</p>
 </div>
 </div>
 </div>
@@ -1807,14 +2111,28 @@ calculations. <a id="sec-mask-vector-logical"></a></p>
 <p>Where available, masking is encoded in a single-bit <code>vm</code> field in the
  instruction (<code>inst[25]</code>).</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>vm
-
-  0    vector result, only where v0[i].LSB = 1
-  1    unmasked</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 6.25%;">
+<col style="width: 93.75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">vm</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vector result, only where v0[i].LSB = 1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">unmasked</p></td>
+</tr>
+</tbody>
+</table>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -2051,18 +2369,48 @@ arguments, and writes the new value of <code>vl</code> into <code>rd</code>.</p>
  1        6            5          5        3        5        7</pre>
 </div>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>vtype register layout
-
-    Bits  Name        Description
-  XLEN-1  vill        Illegal value if set
-XLEN-2:7              Reserved (write 0)
-     6:5  vediv[1:0]  Used by EDIV extension
-     4:2  vsew[2:0]   Standard element width (SEW) setting
-     1:0  vlmul[1:0]  Vector register group multiplier (LMUL) setting</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 7. <code>vtype</code> register layout</caption>
+<colgroup>
+<col style="width: 12.5%;">
+<col style="width: 25%;">
+<col style="width: 62.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Bits</th>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">XLEN-1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vill</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Illegal value if set</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">XLEN-2:7</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Reserved (write 0)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">6:5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vediv[1:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Used by EDIV extension</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4:2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsew[2:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Standard element width (SEW) setting</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1:0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vlmul[1:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vector register group multiplier (LMUL) setting</p></td>
+</tr>
+</tbody>
+</table>
 <div class="listingblock">
 <div class="content">
 <pre> Suggested assembler names used for vtypei setting
@@ -2091,28 +2439,8 @@ Examples:
 </div>
 <div class="paragraph">
 <p>If the <code>vtype</code> setting is not supported by the implementation, then
-the <code>vill</code> bit is set in <code>vtype</code>, and the other defined fields are set
-to the "closest" supported value as defined below:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>vsew</code> is set to the largest legal value equal to or smaller than the requested
-setting</p>
-</li>
-<li>
-<p><code>vlmul</code> is set to the requested value, as all LMUL settings must be supported</p>
-</li>
-<li>
-<p><code>vediv</code> is set to the largest legal value equal to or smaller than the requested subdivide for the value that is in <code>vsew</code> (this might not be the requested <code>vsew</code>)</p>
-</li>
-<li>
-<p>unused bits in <code>vtype</code> are set to zero.</p>
-</li>
-<li>
-<p>The <code>vl</code> CSR is set to zero if the requested <code>vtype</code> is illegal.</p>
-</li>
-</ul>
+the <code>vill</code> bit is set in <code>vtype</code>, the remaining bits in <code>vtype</code> are
+set to zero, and the <code>vl</code> register is also set to zero.</p>
 </div>
 <div class="paragraph">
 <p>The requested application vector length (AVL) is passed in <code>rs1</code> as an
@@ -2126,7 +2454,7 @@ an infinite AVL, and so requests the maximum possible vector length.</p>
 <div class="title">Note</div>
 </td>
 <td class="content">
-A <code>vsetvl</code> with AVL=<code>x0</code> can be used to read current VLMAX,
+A <code>vsetvli</code> with AVL=<code>x0</code> can be used to read current VLMAX,
 though this does overwrite <code>vl</code>.
 </td>
 </tr>
@@ -2143,7 +2471,8 @@ Earlier drafts required a trap when setting <code>vtype</code> to an
 illegal value.  However, this would have added the first
 data-dependent trap on a CSR write to the ISA.  The current scheme
 also supports light-weight runtime interrogation of the supported
-vector unit configurations.
+vector unit configurations by checking if <code>vill</code> is clear for a given
+setting.
 </td>
 </tr>
 </table>
@@ -2152,7 +2481,8 @@ vector unit configurations.
 <div class="sect2">
 <h3 id="_constraints_on_setting_vl">6.2. Constraints on Setting <code>vl</code></h3>
 <div class="paragraph">
-<p>The resulting <code>vl</code> setting must satisfy the following constraints:</p>
+<p>The <code>vsetvl{i}</code> instructions first set VLMAX according to the <code>vtype</code>
+argument, then set <code>vl</code> obeying the following constraints:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -2166,7 +2496,7 @@ vector unit configurations.
 <p><code>vl = VLMAX</code> if <code>AVL &#8805; (2 * VLMAX)</code></p>
 </li>
 <li>
-<p>Deterministic on any given implementation for same input AVL and <code>vtype</code> values</p>
+<p>Deterministic on any given implementation for same input AVL and VLMAX values</p>
 </li>
 <li>
 <p>These specific properties follow from the prior rules:</p>
@@ -2185,7 +2515,8 @@ vector unit configurations.
 <p><code>vl &#8804; AVL</code></p>
 </li>
 <li>
-<p>a value read from <code>vl</code> when used as AVL arg to <code>vsetvl{i}</code> results in same value in <code>vl</code></p>
+<p>a value read from <code>vl</code> when used as the AVL argument to <code>vsetvl{i}</code> results in the same
+value in <code>vl</code>, provided the resultant VLMAX equals the value of VLMAX at the time that <code>vl</code> was read</p>
 </li>
 </ol>
 </div>
@@ -2255,14 +2586,14 @@ throughput on mixed-width operations in a single loop.</p>
 # Loop using only widest elements:
 
 loop:
-    vsetvli a3, a0, e32,m8   # Use only 32-bit elements
+    vsetvli a3, a0, e32,m8  # Use only 32-bit elements
     vlh.v v8, (a1)          # Sign-extend 16b load values to 32b elements
-      sll t1, a3, 1
+      sll t1, a3, 1         # Multiply length by two bytes/element
       add a1, a1, t1        # Bump pointer
     vmul.vx  v8, v8, x10    # 32b multiply result
     vsrl.vi  v8, v8, 3      # Shift elements
     vsw.v v8, (a2)          # Store vector of 32b results
-      sll t1, a3, 2
+      sll t1, a3, 2         # Multiply length by four bytes/element
       add a2, a2, t1        # Bump pointer
       sub a0, a0, a3        # Decrement count
       bnez a0, loop         # Any more?
@@ -2272,14 +2603,14 @@ loop:
 loop:
     vsetvli a3, a0, e16,m4  # vtype = 16-bit integer vectors
     vlh.v v4, (a1)          # Get 16b vector
-      slli t1, a3, 1
+      slli t1, a3, 1        # Multiply length by two bytes/element
       add a1, a1, t1        # Bump pointer
     vwmul.vx v8, v4, x10    # 32b in &lt;v8--v15&gt;
 
     vsetvli x0, a0, e32,m8  # Operate on 32b values
     vsrl.vi v8, v8, 3
     vsw.v v8, (a2)          # Store vector of 32b
-      slli t1, t1, 2
+      slli t1, a3, 2        # Multiply length by four bytes/element
       add a2, a2, t1        # Bump pointer
       sub a0, a0, a3        # Decrement count
       bnez a0, loop         # Any more?</pre>
@@ -2331,22 +2662,60 @@ Format for Vector Store Instructions under STORE-FP major opcode
   3     3     1      5           5         3         5        7</pre>
 </div>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>rs1[4:0] specifies x register holding base address
-rs2[4:0] specifies x register holding stride
-vs2[4:0] specifies v register holding address offsets
-vs3[4:0] specifies v register holding store data
-vd[4:0]  specifies v register destination of load
-
-vm specifies vector mask
-width[2:0] specifies size of memory elements, and distinguishes from FP scalar
-mop[2:0] specifies memory addressing mode
-nf[2:0] specifies the number of fields in each segment, for segment load/stores
-
-lumop[4:0]/sumop[4:0] are additional fields encoding variants of unit-stride instructions</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rs1[4:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">specifies x register holding base address</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rs2[4:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">specifies x register holding stride</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vs2[4:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">specifies v register holding address offsets</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vs3[4:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">specifies v register holding store data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vd[4:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">specifies v register destination of load</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">specifies vector mask</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">width[2:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">specifies size of memory elements, and distinguishes from FP scalar</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mop[2:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">specifies memory addressing mode</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">nf[2:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">specifies the number of fields in each segment, for segment load/stores</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">lumop[4:0]/sumop[4:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">are additional fields encoding variants of unit-stride instructions</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="sect2">
 <h3 id="_vector_loadstore_addressing_modes">7.2. Vector Load/Store Addressing Modes</h3>
@@ -2400,29 +2769,156 @@ requiring bytes use 64b of space in a vector register.
 <p>The vector addressing modes are encoded using the 3-bit <code>mop[2:0]</code>
 field.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>mop [2:0] encoding for loads
-   0 0 0  zero-extended unit-stride         VLxU,VLE
-   0 0 1  reserved
-   0 1 0  zero-extended strided             VLSxU, VLSE
-   0 1 1  zero-extended indexed             VLXxU, VLXE
-   1 0 0  sign-extended unit-stride         VLx  (x!=E)
-   1 0 1  reserved
-   1 1 0  sign-extended strided             VLSx (x!=E)
-   1 1 1  sign-extended indexed             VLXx (x!=E)
-
-mop [2:0] encoding for stores
-   0 0 0  unit-stride                       VSx
-   0 0 1  reserved
-   0 1 0  strided                           VSSx
-   0 1 1  indexed-ordered                   VSXx
-   1 0 0  reserved
-   1 0 1  reserved
-   1 1 0  reserved
-   1 1 1  indexed-unordered                 VSUXx</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 8. encoding for loads</caption>
+<colgroup>
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 43.75%;">
+<col style="width: 37.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="3">mop [2:0]</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Opcodes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">zero-extended unit-stride</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VLxU,VLE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reserved</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">zero-extended strided</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VLSxU, VLSE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">zero-extended indexed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VLXxU, VLXE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sign-extended unit-stride</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VLx  (x!=E)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reserved</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sign-extended strided</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VLSx (x!=E)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sign-extended indexed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VLXx (x!=E)</p></td>
+</tr>
+</tbody>
+</table>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 9. encoding for stores</caption>
+<colgroup>
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 43.75%;">
+<col style="width: 37.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="3">mop [2:0]</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Opcodes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">unit-stride</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VSx</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reserved</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">strided</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VSSx</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">indexed-ordered</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VSXx</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reserved</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reserved</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reserved</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">indexed-unordered</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VSUXx</p></td>
+</tr>
+</tbody>
+</table>
 <div class="paragraph">
 <p>The vector indexed memory operations have two forms, ordered and
 unordered.  The indexed-unordered stores do not preserve element
@@ -2448,20 +2944,100 @@ indexed-ordered.
 5-bit <code>lumop</code> and <code>sumop</code> fields in the unit-stride load and store
 instruction encodings respectively.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>lumop[4:0]
-   00000  unit-stride
-   0xxxx  reserved, x!=0
-   10000  unit-stride fault-only-first
-   1xxxx  reserved, x!=0
-
-sumop[4:0]
-   00000  unit-stride
-   0xxxx  reserved, x!=0
-   1xxxx  reserved</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 10. lumop</caption>
+<colgroup>
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 68.75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="5">lumop[4:0]</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">unit-stride</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reserved, x!=0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">unit-stride fault-only-first</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reserved, x!=0</p></td>
+</tr>
+</tbody>
+</table>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 11. sumop</caption>
+<colgroup>
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 68.75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="5">sumop[4:0]</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">unit-stride</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reserved, x!=0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reserved</p></td>
+</tr>
+</tbody>
+</table>
 <div class="paragraph">
 <p>The <code>nf[2:0]</code> field encodes the number of fields in each segment.  For
 regular vector loads and stores, <code>nf</code>=0, indicating that a single
@@ -2495,23 +3071,105 @@ stores.  Three of the width types encode vector loads and stores that
 move fixed-size memory elements of 8 bits, 16 bits, or 32 bits, while
 the fourth encoding moves SEW-bit memory elements.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>                     Width   Mem     Reg       Opcode
-                     [2:0]   bits    bits
-
-Standard scalar FP    001     16     FLEN      FLH/FSH
-Standard scalar FP    010     32     FLEN      FLW/FSW
-Standard scalar FP    011     64     FLEN      FLD/FSD
-Standard scalar FP    100    128     FLEN      FLQ/FSQ
-Vector byte           000   vl*8     vl*SEW    VxB
-Vector halfword       101   vl*16    vl*SEW    VxH
-Vector word           110   vl*32    vl*SEW    VxW
-Vector element        111   vl*SEW   vl*SEW    VxE
-
-Mem bits is the size of element accessed in memory
-Reg bits is the size of element accessed in register</pre>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 18.75%;">
+<col style="width: 18.75%;">
+<col style="width: 18.75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top" colspan="3">Width [2:0]</th>
+<th class="tableblock halign-left valign-top">Mem bits</th>
+<th class="tableblock halign-left valign-top">Reg bits</th>
+<th class="tableblock halign-left valign-top">Opcode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Standard scalar FP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FLEN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FLH/FSH</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Standard scalar FP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FLEN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FLW/FSW</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Standard scalar FP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FLEN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FLD/FSD</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Standard scalar FP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FLEN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FLQ/FSQ</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vector byte</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vl*8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vl*SEW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VxB</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vector halfword</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vl*16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vl*SEW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VxH</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vector word</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vl*32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vl*SEW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VxW</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vector element</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vl*SEW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vl*SEW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VxE</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Mem bits is the size of element accessed in memory</p>
 </div>
+<div class="paragraph">
+<p>Reg bits is the size of element accessed in register</p>
 </div>
 <div class="paragraph">
 <p>Fixed-sized vector loads can optionally sign or zero-extend their
@@ -2724,19 +3382,70 @@ encodes the size of the register elements.</p>
 unsigned integer that contains one less than the number of fields per
 segment, <em>NFIELDS</em>.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>nf[2:0] NFIELDS
- 000      1
- 001      2
- 010      3
- 011      4
- 100      5
- 101      6
- 110      7
- 111      8</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 81.25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="3">nf[2:0]</th>
+<th class="tableblock halign-left valign-top">NFIELDS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">6</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">7</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+</tr>
+</tbody>
+</table>
 <div class="paragraph">
 <p>LMUL must be set to 1 for a segment load or store (NFIELDS &gt; 1), and
 each field will be held in successively numbered vector registers.  If
@@ -2994,22 +3703,88 @@ hart.</p>
 <p>Vector AMOs provide no ordering guarantee between element operations
 in the same vector AMO instruction.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>Vector AMO width encoding
-                     Width   Mem     Reg      Opcode
-                     [2:0]   bits    bits
-
-Standard scalar AMO   010     32     XLEN     AMO*.W
-Standard scalar AMO   011     64     XLEN     AMO*.D
-Standard scalar AMO   100    128     XLEN     AMO*.Q
-Vector AMO            110     32    vl*SEW    VAMO*W.V
-Vector AMO            111     64    vl*SEW    VAMO*D.V
-Vector AMO            000    128    vl*SEW    VAMO*Q.V
-
-Mem bits is the size of element accessed in memory
-Reg bits is the size of element accessed in register</pre>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 12. Vector AMO width encoding</caption>
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 18.75%;">
+<col style="width: 18.75%;">
+<col style="width: 18.75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top" colspan="3">Width [2:0]</th>
+<th class="tableblock halign-left valign-top">Mem bits</th>
+<th class="tableblock halign-left valign-top">Reg bits</th>
+<th class="tableblock halign-left valign-top">Opcode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Standard scalar AMO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">XLEN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AMO*.W</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Standard scalar AMO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">XLEN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AMO*.D</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Standard scalar AMO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">XLEN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AMO*.Q</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vector AMO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vl*SEW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VAMO*W.V</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vector AMO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vl*SEW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VAMO*D.V</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vector AMO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vl*SEW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VAMO*Q.V</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Mem bits is the size of element accessed in memory</p>
 </div>
+<div class="paragraph">
+<p>Reg bits is the size of element accessed in register</p>
 </div>
 <div class="paragraph">
 <p>The vector AMO width encoding flips the high bit of the corresponding
@@ -3032,20 +3807,97 @@ required by the standard scalar base architecture.</p>
 <p>The vector <code>amoop[4:0]</code> field uses the same encoding as the scalar
 5-bit AMO instruction field, except that LR and SC are not supported.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>amoop   opcode
-00001   vamoswap
-00000   vamoadd
-00100   vamoxor
-01100   vamoand
-01000   vamoor
-10000   vamomin
-10100   vamomax
-11000   vamominu
-11100   vamomaxu</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 13. amoop</caption>
+<colgroup>
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 68.75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="5">amoop</th>
+<th class="tableblock halign-left valign-top">opcode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vamoswap</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vamoadd</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vamoxor</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vamoand</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vamoor</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vamomin</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vamomax</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vamominu</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vamomaxu</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="sect1">
@@ -3118,20 +3970,91 @@ used to define sub-categories of vector instructions.</p>
 <div class="paragraph">
 <p>The <code>funct3</code> field encodes the operand type and source locations.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre> funct3[2:0]    Operands          Source of scalar(s)
-
-0 0 0   OPIVV   vector-vector           -
-0 0 1   OPFVV   vector-vector           -
-0 1 0   OPMVV   vector-vector           -
-0 1 1   OPIVI   vector-immediate  imm[4:0]
-1 0 0   OPIVX   vector-scalar     GPR x register rs1
-1 0 1   OPFVF   vector-scalar     FP f register rs1
-1 1 0   OPMVX   vector-scalar     GPR x register rs1
-1 1 1   OPCFG   scalars-imms      GPR x register rs1 &amp; rs2/imm</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 14. funct3</caption>
+<colgroup>
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 18.75%;">
+<col style="width: 31.25%;">
+<col style="width: 31.25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="3">funct3[2:0]</th>
+<th class="tableblock halign-left valign-top">Operands</th>
+<th class="tableblock halign-left valign-top">Source of scalar(s)</th>
+<th class="tableblock halign-left valign-top"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OPIVV</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vector-vector</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OPFVV</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vector-vector</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OPMVV</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vector-vector</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OPIVI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vector-immediate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">imm[4:0]</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OPIVX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vector-scalar</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GPR x register rs1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OPFVF</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vector-scalar</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FP f register rs1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OPMVX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vector-scalar</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GPR x register rs1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OPCFG</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">scalars-imms</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GPR x register rs1 &amp; rs2/imm</p></td>
+</tr>
+</tbody>
+</table>
 <div class="paragraph">
 <p>Integer operations are performed using unsigned or two&#8217;s-complement
 signed integer arithmetic depending on the opcode.</p>
@@ -3540,6 +4463,10 @@ function to support long word arithmetic for subtraction.</p>
 <p>The encodings corresponding to the masked versions (vm=0) of <code>vadc</code>
 and <code>vsbc</code> are reserved.</p>
 </div>
+<div class="paragraph">
+<p>For both <code>vadc</code> and <code>vsbc</code>, an illegal instruction exception is raised if the
+destination vector register is <code>v0</code>.</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_vector_bitwise_logical_instructions">12.4. Vector Bitwise Logical Instructions</h3>
@@ -3840,7 +4767,7 @@ masked va &gt;= x, any vd
 <div class="sect2">
 <h3 id="_vector_integer_minmax_instructions">12.8. Vector Integer Min/Max Instructions</h3>
 <div class="paragraph">
-<p>Signed and unsigned integer mininum and maximum instructions are
+<p>Signed and unsigned integer minimum and maximum instructions are
 supported.</p>
 </div>
 <div class="listingblock">
@@ -4310,15 +5237,47 @@ destination accumulator, with saturation if the result would overflow
 the destination accumulator. The <code>vxsat</code> bit is set if any overflow
 occurs.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>        Product  Rounded                Guard
- SEW     Width   Product   Accumulator   Bits
-   8       16       12         16         4
-  16       32       24         32         8
-  32       64       48         64        16</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">SEW</th>
+<th class="tableblock halign-left valign-top">Product Width</th>
+<th class="tableblock halign-left valign-top">Rounded Product</th>
+<th class="tableblock halign-left valign-top">Guard Accumulator</th>
+<th class="tableblock halign-left valign-top">Bits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">12</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">24</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">48</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+</tr>
+</tbody>
+</table>
 <div class="listingblock">
 <div class="content">
 <pre># Widening unsigned-integer scaled multiply-accumulate
@@ -5037,14 +5996,14 @@ the same SEW width.  Overflows wrap around on arithmetic sums.</p>
 <div class="listingblock">
 <div class="content">
 <pre>    # Simple reductions, where [*] denotes all active elements:
-    vredsum.vs  vd, vs2, vs1, vm   # vd[0] =  sum( vs2[*] , vs1[0] )
-    vredmaxu.vs vd, vs2, vs1, vm   # vd[0] = maxu( vs2[*] , vs1[0] )
-    vredmax.vs  vd, vs2, vs1, vm   # vd[0] =  max( vs2[*] , vs1[0] )
-    vredminu.vs vd, vs2, vs1, vm   # vd[0] = minu( vs2[*] , vs1[0] )
-    vredmin.vs  vd, vs2, vs1, vm   # vd[0] =  min( vs2[*] , vs1[0] )
-    vredand.vs  vd, vs2, vs1, vm   # vd[0] =  and( vs2[*] , vs1[0] )
-    vredor.vs   vd, vs2, vs1, vm   # vd[0] =   or( vs2[*] , vs1[0] )
-    vredxor.vs  vd, vs2, vs1, vm   # vd[0] =  xor( vs2[*] , vs1[0] )</pre>
+    vredsum.vs  vd, vs2, vs1, vm   # vd[0] =  sum( vs1[0] , vs2[*] )
+    vredmaxu.vs vd, vs2, vs1, vm   # vd[0] = maxu( vs1[0] , vs2[*] )
+    vredmax.vs  vd, vs2, vs1, vm   # vd[0] =  max( vs1[0] , vs2[*] )
+    vredminu.vs vd, vs2, vs1, vm   # vd[0] = minu( vs1[0] , vs2[*] )
+    vredmin.vs  vd, vs2, vs1, vm   # vd[0] =  min( vs1[0] , vs2[*] )
+    vredand.vs  vd, vs2, vs1, vm   # vd[0] =  and( vs1[0] , vs2[*] )
+    vredor.vs   vd, vs2, vs1, vm   # vd[0] =   or( vs1[0] , vs2[*] )
+    vredxor.vs  vd, vs2, vs1, vm   # vd[0] =  xor( vs1[0] , vs2[*] )</pre>
 </div>
 </div>
 </div>
@@ -5062,10 +6021,10 @@ elements before summing them.</p>
 <div class="listingblock">
 <div class="content">
 <pre>    # Unsigned sum reduction into double-width accumulator
-    vwredsumu.vs vd, vs2, vs1, vm   # 2*SEW = sum(SEW) + 2*SEW
+    vwredsumu.vs vd, vs2, vs1, vm   # 2*SEW = 2*SEW + sum(zero-extend(SEW))
 
     # Signed sum reduction into double-width accumulator
-    vwredsum.vs  vd, vs2, vs1, vm   # 2*SEW = sum(SEW) + 2*SEW</pre>
+    vwredsum.vs  vd, vs2, vs1, vm   # 2*SEW = 2*SEW + sum(sign-extend(SEW))</pre>
 </div>
 </div>
 </div>
@@ -5082,9 +6041,12 @@ elements before summing them.</p>
 </div>
 <div class="paragraph">
 <p>The <code>vfredosum</code> instruction must sum the floating-point values in
-element order, while the <code>vfredsum</code> is allowed to perform the
+element order, starting with the scalar in <code>vs1[0]</code>--that is, it
+performs the computation
+<code>(((vs1[0] + vs2[0]) + vs2[1]) + &#8230;&#8203;) + vs2[vl-1]</code>.
+By contrast, <code>vfredsum</code> is allowed to perform the
 reduction in any order, provided the final result corresponds to some
-sequential ordering of <code>vl</code>-1 floating-point add operations.</p>
+sequential ordering of <code>vl</code> floating-point add operations.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -5122,32 +6084,14 @@ read and write a double-width reduction result.</p>
 <div class="listingblock">
 <div class="content">
 <pre> # Simple reductions.
- vfwredosum.vs vd, vs2, vs1, vm # Ordered reduce 2*SEW = sum(SEW) + 2*SEW
- vfwredsum.vs vd, vs2, vs1, vm  # Unordered reduce  2*SEW = sum(SEW) + 2*SEW</pre>
+ vfwredosum.vs vd, vs2, vs1, vm # Ordered reduce 2*SEW =  2*SEW + sum(promote(SEW))
+ vfwredsum.vs vd, vs2, vs1, vm  # Unordered reduce  2*SEW = 2*SEW + sum(promote(SEW))</pre>
 </div>
 </div>
 <div class="paragraph">
 <p>The reduction of the SEW-width elements is performed as in the
-single-width reduction case, with the final SEW-width result promoted
-to 2*SEW bits before adding to the 2*SEW-width accumulator.</p>
-</div>
-<div class="paragraph">
-<p>For the <code>vfwredsum.vs</code> instruction, implementations may optionally
-perform the reduction by first promoting elements to the wider (2*SEW)
-format.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-The <code>vfwredosum.vs</code> instruction must round as if performed
-sequentially in the original format.
-</td>
-</tr>
-</table>
+single-width reduction case, with the elements in <code>vs2</code> promoted
+to 2*SEW bits before adding to the 2*SEW-bit accumulator.</p>
 </div>
 </div>
 </div>
@@ -5174,6 +6118,10 @@ of <code>vlmul</code>.</p>
 Vector mask logical instructions are always unmasked so there are no
 inactive elements.  Mask elements past <code>vl</code>, the tail elements, are
 zeroed.</p>
+</div>
+<div class="paragraph">
+<p>Within a mask element, these instructions perform their operations in
+a bitwise fashion.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -5203,30 +6151,176 @@ common uses of mask logical operations:</p>
 <p>The set of eight mask logical instructions can generate any of the 16
 possibly binary logical functions of the two input masks:</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>inputs
-0 0 1 1 src1
-0 1 0 1 src2
-
-output  instruction                 pseudoinstruction
-0 0 0 0 vmxor.mm vd, vd, vd         vmclr.m vd
-1 0 0 0 vmnor.mm vd, src1, src2
-0 1 0 0 vmandnot.mm vd, src2, src1
-1 1 0 0 vmnand.mm vd, src1, src1    vmnot.m vd, src1
-0 0 1 0 vmandnot.mm vd, src1, src2
-1 0 1 0 vmnand.mm vd, src2, src2    vmnot.m vd, src2
-0 1 1 0 vmxor.mm vd, src1, src2
-1 1 1 0 vmnand.mm vd, src1, src2
-0 0 0 1 vmand.mm vd, src1, src2
-1 0 0 1 vmxnor.mm vd, src1, src2
-0 1 0 1 vmand.mm vd, src2, src2     vmmv.m vd, src2
-1 1 0 1 vmornot.mm vd, src2, src1
-0 0 1 1 vmand.mm vd, src1, src1     vmmv.m vd, src1
-1 0 1 1 vmornot.mm vd, src1, src2
-1 1 1 1 vmxnor.mm vd, vd, vd        vmset.m vd</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="4">inputs</th>
+<th class="tableblock halign-left valign-top"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">src1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">src2</p></td>
+</tr>
+</tbody>
+</table>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 37.5%;">
+<col style="width: 37.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="4">output</th>
+<th class="tableblock halign-left valign-top">instruction</th>
+<th class="tableblock halign-left valign-top">pseudoinstruction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmxor.mm vd, vd, vd</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmclr.m vd</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmnor.mm vd, src1, src2</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmandnot.mm vd, src2, src1</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmnand.mm vd, src1, src1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmnot.m vd, src1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmandnot.mm vd, src1, src2</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmnand.mm vd, src2, src2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmnot.m vd, src2</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmxor.mm vd, src1, src2</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmnand.mm vd, src1, src2</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmand.mm vd, src1, src2</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmxnor.mm vd, src1, src2</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmand.mm vd, src2, src2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmmv.m vd, src2</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmornot.mm vd, src2, src1</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmand.mm vd, src1, src1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmmv.m vd, src1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmornot.mm vd, src1, src2</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmxnor.mm vd, vd, vd</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmset.m vd</p></td>
+</tr>
+</tbody>
+</table>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -5499,7 +6593,7 @@ destination SEW, the least-significant SEW bits are retained.</p>
 </div>
 <div class="paragraph">
 <p>Traps on <code>vmiota.m</code> are always reported with a <code>vstart</code> of 0, and
-execution is always restarted from the begininng when resuming after a
+execution is always restarted from the beginning when resuming after a
 trap handler.  An illegal instruction exception is raised if <code>vstart</code>
 is non-zero.</p>
 </div>
@@ -5517,7 +6611,7 @@ the destination vector register group overlaps <code>v0</code>.</p>
 </td>
 <td class="content">
 These constraints exist for two reasons.  First, to simplify
-avoidance of WAR hazards in implementatons with temporally long vector
+avoidance of WAR hazards in implementations with temporally long vector
 registers and no vector register renaming.  Second, to enable resuming
 execution after a trap simpler.
 </td>
@@ -6260,64 +7354,301 @@ part of mandatory base in Unix vector profile.
 <p>The divided element extension adds a two-bit field, <code>vediv[1:0]</code> to
 the <code>vtype</code> register.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>vtype register layout
-
-    Bits  Name        Description
-  XLEN-1  vill        Illegal value if set
-XLEN-2:7              Reserved (write 0)
-     6:5  vediv[1:0]  Used by EDIV extension
-     4:2  vsew[2:0]   Standard element width (SEW) setting
-     1:0  vlmul[1:0]  Vector register group multiplier (LMUL) setting</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 15. <code>vtype</code> register layout</caption>
+<colgroup>
+<col style="width: 12.5%;">
+<col style="width: 25%;">
+<col style="width: 62.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Bits</th>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">XLEN-1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vill</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Illegal value if set</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">XLEN-2:7</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Reserved (write 0)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">6:5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vediv[1:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Used by EDIV extension</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4:2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsew[2:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Standard element width (SEW) setting</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1:0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vlmul[1:0]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vector register group multiplier (LMUL) setting</p></td>
+</tr>
+</tbody>
+</table>
 <div class="paragraph">
 <p>The <code>vediv</code> field encodes the number of ways, <em>EDIV</em>, into which each
 SEW-bit element is subdivided into equal sub-elements.  A vector
 register group is now considered to hold a vector of sub-vectors.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>vediv Division
-[1:0] EDIV
-
- 0 0  1     (undivided, as in base)
- 0 1  2     two equal sub-elements
- 1 0  4     four equal sub-elements
- 1 1  8     eight equal sub-elements</pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>                        Integer     Integer       FP sum/dot   FP sum/dot   FP sum/dot
-                        sum         dot           accumulator  accumulator  accumulator
-SEW  EDIV  Sub-element  accumulator accumulator    FLEN=32      FLEN=64      FLEN=128
-  8b   2      4b          8b            8b          -            -            -
-  8b   4      2b          8b            8b          -            -            -
-  8b   8      1b          8b            8b          -            -            -
-
- 16b   2      8b         16b           16b          -            -            -
- 16b   4      4b          8b           16b          -            -            -
- 16b   8      2b          8b            8b          -            -            -
-
- 32b   2     16b         32b           32b          32b          32b          32b
- 32b   4      8b         16b           32b           -            -            -
- 32b   8      4b          8b           16b           -            -            -
-
- 64b   2     32b         64b           64b          32b          64b          64b
- 64b   4     16b         32b           64b          32b          32b          32b
- 64b   8      8b         16b           32b           -            -            -
-
-128b   2     64b        128b          128b          32b          64b         128b
-128b   4     32b         64b          128b          32b          64b          64b
-128b   8     16b         32b           64b          32b          32b          32b
-
-256b   2    128b        256b          256b          32b          64b         128b
-256b   4     64b        128b          256b          32b          64b         128b
-256b   8     32b         64b          128b          32b          64b          64b</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 6.25%;">
+<col style="width: 81.25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="3">vediv [1:0]</th>
+<th class="tableblock halign-left valign-top">Division EDIV</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(undivided, as in base)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">two equal sub-elements</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">four equal sub-elements</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">eight equal sub-elements</p></td>
+</tr>
+</tbody>
+</table>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">SEW</p></td>
+<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">EDIV</p></td>
+<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">Sub-element</p></td>
+<td class="tableblock halign-left valign-top" colspan="2"><p class="tableblock">Integer accumulator</p></td>
+<td class="tableblock halign-left valign-top" colspan="3"><p class="tableblock">FP sum/dot accumulator</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sum</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">dot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FLEN=32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FLEN=64</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FLEN=128</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128b</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">256b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">256b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">256b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128b</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">256b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">256b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128b</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">256b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64b</p></td>
+</tr>
+</tbody>
+</table>
 <div class="paragraph">
 <p>Each implementation defines a minimum size for a sub-element, <em>SELEN</em>,
 which must be at most 8 bits.</p>
@@ -6577,129 +7908,1303 @@ vfdot.vv v1, v2, v3
 <div class="sect1">
 <h2 id="_vector_instruction_listing">20. Vector Instruction Listing</h2>
 <div class="sectionbody">
-<div class="listingblock">
-<div class="content">
-<pre>Integer               Integer               FP
-
-funct3                funct3                funct3
-OPIVV  V              OPMVV  V              OPFVV  V
-OPIVX   X             OPMVX   X             OPFVF   F
-OPIVI    I
-
-funct6                funct6                funct6
-000000 VXI vadd       000000 V  vredsum     000000 VF vfadd
-000001                000001 V  vredand     000001 V  vfredsum
-000010 VX  vsub       000010 V  vredor      000010 VF vfsub
-000011  XI vrsub      000011 V  vredxor     000011 V  vfredosum
-000100 VX  vminu      000100 V  vredminu    000100 VF vfmin
-000101 VX  vmin       000101 V  vredmin     000101 V  vfredmin
-000110 VX  vmaxu      000110 V  vredmaxu    000110 VF vfmax
-000111 VX  vmax       000111 V  vredmax     000111 V  vfredmax
-001000                001000                001000 VF vfsgnj
-001001 VXI vand       001001                001001 VF vfsgnn
-001010 VXI vor        001010                001010 VF vfsgnx
-001011 VXI vxor       001011                001011
-001100 VXI vrgather   001100 V  vext.x.v    001100 V  vfmv.f.s
-001101                001101  X vmv.s.x     001101  F vfmv.s.f
-001110  XI vslideup   001110  X vslide1up   001110
-001111  XI vslidedown 001111  X vslide1down 001111
-
-010000 VXI vadc       010000                010000
-010001                010001                010001
-010010 VX  vsbc       010010                010010
-010011                010011                010011
-010100                010100 V  vmpopc      010100
-010101                010101 V  vmfirst     010101
-010110                010110 V  VMUNARY0    010110
-010111 VXI vmerge     010111 V  vcompress   010111  F vfmerge.vf
-011000 VXI vseq       011000 V  vmandnot    011000 VF vfeq
-011001 VXI vsne       011001 V  vmand       011001 VF vfle
-011010 VX  vsltu      011010 V  vmor        011010 VF vford
-011011 VX  vslt       011011 V  vmxor       011011 VF vflt
-011100 VXI vsleu      011100 V  vmornot     011100 VF vfne
-011101 VXI vsle       011101 V  vmnand      011101  F vfgt
-011110  XI vsgtu      011110 V  vmnor       011110
-011111  XI vsgt       011111 V  vmxnor      011111  F vfge
-
-100000 VXI vsaddu     100000 VX vdivu       100000 VF vfdiv
-100001 VXI vsadd      100001 VX vdiv        100001  F vfrdiv
-100010 VX  vssubu     100010 VX vremu       100010 V  VFUNARY0
-100011 VX  vssub      100011 VX vrem        100011 V  VFUNARY1
-100100 VXI vaadd      100100 VX vmulhu      100100 VF vfmul
-100101 VXI vsll       100101 VX vmul        100101
-100110 VX  vasub      100110 VX vmulhsu     100110
-100111 VX  vsmul      100111 VX vmulh       100111
-101000 VXI vsrl       101000                101000 VF vfmadd
-101001 VXI vsra       101001 VX vmadd       101001 VF vfnmadd
-101010 VXI vssrl      101010                101010 VF vfmsub
-101011 VXI vssra      101011 VX vmsub       101011 VF vfnmsub
-101100 VXI vnsrl      101100                101100 VF vfmacc
-101101 VXI vnsra      101101 VX vmacc       101101 VF vfnmacc
-101110 VXI vnclipu    101110                101110 VF vfmsac
-101111 VXI vnclip     101111 VX vmsac       101111 VF vfnmsac
-
-110000 V  vwredsumu   110000 VX vwaddu      110000 VF vfwadd
-110001 V  vwredsum    110001 VX vwadd       110001 V  vfwredsum
-110010                110010 VX vwsubu      110010 VF vfwsub
-110011                110011 VX vwsub       110011 V  vfwredosum
-110100                110100 VX vwaddu.w    110100 VF vfwadd.w
-110101                110101 VX vwadd.w     110101
-110110                110110 VX vwsubu.w    110110 VF vfwsub.w
-110111                110111 VX vwsub.w     110111
-111000 V  vdotu       111000 VX vwmulu      111000 VF vfwmul
-111001 V  vdot        111001                111001 V  vfdot
-111010                111010 VX vwmulsu     111010
-111011                111011 VX vwmul       111011
-111100 VX vwsmaccu    111100 VX vwmaccu     111100 VF vfwmacc
-111101 VX vwsmacc     111101 VX vwmacc      111101 VF vfwnmacc
-111110 VX vwsmsacu    111110 VX vwmsacu     111110 VF vfwmsac
-111111 VX vwsmsac     111111 VX vwmsac      111111 VF vfwnmsac</pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>VFUNARY0 encoding space
- vs1
- single-width converts
-00000 vfcvt.xu.f.v
-00001 vfcvt.x.f.v
-00010 vfcvt.f.xu.v
-00011 vfcvt.f.x.v
-
- widening converts
-01000 vfwcvt.xu.f.v
-01001 vfwcvt.x.f.v
-01010 vfwcvt.f.xu.v
-01011 vfwcvt.f.x.v
-01100 vfwcvt.f.f.v
-
- narrowing converts
-10000 vfncvt.xu.f.v
-10001 vfncvt.x.f.v
-10010 vfncvt.f.xu.v
-10011 vfncvt.f.x.v
-10100 vfncvt.f.f.v</pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>VFUNARY1 encoding space
- vs1
-00000 vfsqrt.v
-10000 vfclass.v</pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>VMUNARY0 encoding space
- vs1
-00001 vmsbf
-00010 vmsof
-00011 vmsif
-10000 vmiota
-10001 vid</pre>
-</div>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 9.3023%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 18.6046%;">
+<col style="width: 9.3023%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 18.6046%;">
+<col style="width: 9.3023%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 18.6054%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="5">Integer</th>
+<th class="tableblock halign-left valign-top" colspan="4">Integer</th>
+<th class="tableblock halign-left valign-top" colspan="4">FP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">funct3</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">funct3</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">funct3</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OPIVV</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OPMVV</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OPFVV</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OPIVX</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OPMVX</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OPFVF</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OPIVI</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 9.3023%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 18.6046%;">
+<col style="width: 9.3023%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 18.6046%;">
+<col style="width: 9.3023%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 18.6054%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="5">funct6</th>
+<th class="tableblock halign-left valign-top" colspan="4">funct6</th>
+<th class="tableblock halign-left valign-top" colspan="4">funct6</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vadd</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vredsum</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfadd</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000001</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vredand</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfredsum</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsub</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vredor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfsub</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000011</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vrsub</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vredxor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfredosum</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vminu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vredminu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfmin</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmin</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vredmin</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfredmin</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000110</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmaxu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000110</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vredmaxu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000110</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfmax</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmax</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vredmax</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">000111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfredmax</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001000</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001000</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfsgnj</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vand</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001001</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfsgnn</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001010</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfsgnx</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vxor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001011</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001011</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vrgather</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vext.x.v</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfmv.f.s</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001101</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001101</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmv.s.x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001101</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfmv.s.f</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001110</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vslideup</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001110</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vslide1up</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001110</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001111</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vslidedown</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001111</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vslide1down</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">001111</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 9.3023%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 18.6046%;">
+<col style="width: 9.3023%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 18.6046%;">
+<col style="width: 9.3023%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 18.6054%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="5">funct6</th>
+<th class="tableblock halign-left valign-top" colspan="4">funct6</th>
+<th class="tableblock halign-left valign-top" colspan="4">funct6</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vadc</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010000</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010000</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010001</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010001</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010001</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsbc</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010010</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010010</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010011</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010011</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010011</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010100</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmpopc</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010100</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010101</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmfirst</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010101</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010110</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010110</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VMUNARY0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010110</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmerge</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vcompress</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">010111</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfmerge.vf</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vseq</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmandnot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfeq</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsne</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmand</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfle</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsltu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vford</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vslt</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmxor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vflt</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsleu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmornot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfne</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsle</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmnand</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011101</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfgt</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011110</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsgtu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011110</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmnor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011110</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011111</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsgt</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmxnor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">011111</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfge</p></td>
+</tr>
+</tbody>
+</table>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 9.3023%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 18.6046%;">
+<col style="width: 9.3023%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 18.6046%;">
+<col style="width: 9.3023%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 18.6054%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="5">funct6</th>
+<th class="tableblock halign-left valign-top" colspan="4">funct6</th>
+<th class="tableblock halign-left valign-top" colspan="4">funct6</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsaddu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vdivu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfdiv</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsadd</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vdiv</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100001</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfrdiv</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vssubu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vremu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VFUNARY0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vssub</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vrem</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VFUNARY1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vaadd</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmulhu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfmul</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsll</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmul</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100101</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100110</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vasub</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100110</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmulhsu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100110</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsmul</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmulh</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100111</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsrl</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101000</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfmadd</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vsra</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmadd</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfnmadd</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vssrl</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101010</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfmsub</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vssra</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmsub</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfnmsub</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vnsrl</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101100</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfmacc</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vnsra</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmacc</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfnmacc</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101110</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vnclipu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101110</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101110</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfmsac</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vnclip</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmsac</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">101111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfnmsac</p></td>
+</tr>
+</tbody>
+</table>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 9.3023%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 18.6046%;">
+<col style="width: 9.3023%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 18.6046%;">
+<col style="width: 9.3023%;">
+<col style="width: 2.3255%;">
+<col style="width: 2.3255%;">
+<col style="width: 18.6054%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="5">funct6</th>
+<th class="tableblock halign-left valign-top" colspan="4">funct6</th>
+<th class="tableblock halign-left valign-top" colspan="4">funct6</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwredsumu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwaddu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwadd</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwredsum</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwadd</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwredsum</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110010</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwsubu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwsub</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110011</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwsub</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwredosum</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110100</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwaddu.w</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwadd.w</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110101</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwadd.w</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110101</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110110</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110110</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwsubu.w</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110110</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwsub.w</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110111</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwsub.w</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">110111</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vdotu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwmulu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwmul</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vdot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111001</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfdot</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111010</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwmulsu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111010</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111011</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwmul</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111011</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwsmaccu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwmaccu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwmacc</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwsmacc</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwmacc</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwnmacc</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111110</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwsmsacu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111110</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwmsacu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111110</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwmsac</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwsmsac</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwmsac</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">111111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwnmsac</p></td>
+</tr>
+</tbody>
+</table>
+<div style="page-break-after: always;"></div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 16. VFUNARY0 encoding space</caption>
+<colgroup>
+<col style="width: 12.5%;">
+<col style="width: 87.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">vs1</th>
+<th class="tableblock halign-left valign-top">name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top" colspan="2"><p class="tableblock">single-width converts</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfcvt.xu.f.v</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfcvt.x.f.v</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfcvt.f.xu.v</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfcvt.f.x.v</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top" colspan="2"><p class="tableblock">widening converts</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">01000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwcvt.xu.f.v</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">01001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwcvt.x.f.v</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">01010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwcvt.f.xu.v</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">01011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwcvt.f.x.v</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">01100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfwcvt.f.f.v</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top" colspan="2"><p class="tableblock">narrowing converts</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.xu.f.v</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.x.f.v</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.f.xu.v</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.f.x.v</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.f.f.v</p></td>
+</tr>
+</tbody>
+</table>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 17. VFUNARY1 encoding space</caption>
+<colgroup>
+<col style="width: 12.5%;">
+<col style="width: 87.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">vs1</th>
+<th class="tableblock halign-left valign-top">name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfsqrt.v</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfclass.v</p></td>
+</tr>
+</tbody>
+</table>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 18. VMUNARY0 encoding space</caption>
+<colgroup>
+<col style="width: 12.5%;">
+<col style="width: 87.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">vs1</th>
+<th class="tableblock halign-left valign-top"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmsbf</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmsof</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmsif</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmiota</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10001</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vid</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="sect1">
