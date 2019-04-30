@@ -1288,10 +1288,10 @@ instruction variants.</p>
 </div>
 <div class="paragraph">
 <p>The <code>vl</code> register holds an unsigned integer specifying the number of
-elements to be updated by a vector instruction.  Elements in the
-destination vector with indices &#8805; <code>vl</code> are zeroed during
+elements to be updated by a vector instruction.  Elements in any
+destination vector register group with indices &#8805; <code>vl</code> are zeroed during
 execution of a vector instruction.  When <code>vstart</code> &#8805; <code>vl</code>,
-no elements are updated in the destination vector.</p>
+no elements are updated in any destination vector register group.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -1300,8 +1300,8 @@ no elements are updated in the destination vector.</p>
 <div class="title">Note</div>
 </td>
 <td class="content">
-As a consequence, when <code>vl</code>=0, no elements are
-updated in the destination vector, regardless of <code>vstart</code>.
+As a consequence, when <code>vl</code>=0, no elements are updated in the
+destination vector register group, regardless of <code>vstart</code>.
 </td>
 </tr>
 </table>
@@ -2201,12 +2201,12 @@ can raise exceptions and update the destination vector register group.</p>
 <p>The <em>inactive</em> elements are the elements within the current vector
 length setting but where the current mask is disabled at that element
 position.  The inactive elements do not raise exceptions and do not
-update the destination vector register.</p>
+update any destination vector register.</p>
 </li>
 <li>
 <p>The <em>tail</em> elements during a vector instruction&#8217;s execution are the
 elements past the current vector length setting.  The tail elements do
-not raise exceptions, but do zero the results in the destination
+not raise exceptions, but do zero the results in any destination
 vector register group.</p>
 </li>
 <li>
@@ -2633,7 +2633,7 @@ narrower writes to the vector regfile.</p>
 memory.  Vector loads and stores are masked and do not raise
 exceptions on inactive elements.  Masked vector loads do not update
 inactive elements in the destination vector register group.  Masked
-vector stores do not update inactive memory elements.</p>
+vector stores only update active memory elements.</p>
 </div>
 <div class="sect2">
 <h3 id="_vector_loadstore_instruction_encoding">7.1. Vector Load/Store Instruction Encoding</h3>
@@ -6737,7 +6737,7 @@ LMUL and vector register groups.</p>
 </div>
 <div class="paragraph">
 <p>The integer extract operation, <code>vext.x.v</code> reads one SEW-width element
-from a vector register group at the element index and writes it to GPR
+from a vector register at the element index and writes it to GPR
 destination register rd.  The GPR <code>rs1</code> register gives the element
 index, treated as an unsigned integer.  If the index is out of range
 (i.e., x[rs1] &#8805; VLEN/SEW), then zero is returned for the element
@@ -6802,8 +6802,21 @@ ignored.  If SEW &gt; XLEN, the value is zero-extended to SEW bits.</p>
 VLEN/SEW) are zeroed.</p>
 </div>
 <div class="paragraph">
-<p>If <code>vl</code>=0, no operation is performed and the destination register is
-not updated.</p>
+<p>If <code>vstart</code> &#8805; <code>vl</code>, no operation is performed and the destination
+register is not updated.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+As a consequence, when <code>vl</code>=0, no elements are updated in the
+destination vector register group, regardless of <code>vstart</code>.
+</td>
+</tr>
+</table>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -6849,11 +6862,24 @@ the value is NaN-boxed (1-extended) to FLEN bits.</p>
 <div class="paragraph">
 <p>The <code>vfmv.s.f</code> instruction copies the scalar register to element 0 of
 the destination vector register.  If SEW &lt; FLEN, the least-significant
-bits are copied and the upper XLEN-SEW bits are ignored.  If SEW &gt;
-XLEN, the value is NaN-boxed (1-extended) to SEW bits.  The other
+bits are copied and the upper FLEN-SEW bits are ignored.  If SEW &gt;
+FLEN, the value is NaN-boxed (1-extended) to SEW bits.  The other
 elements in the destination vector register ( 0 &lt; index &lt; VLEN/SEW)
-are zeroed.  If <code>vl</code>=0, no operation is performed and the destination
-register is not updated.</p>
+are zeroed.  If <code>vstart</code> &#8805; <code>vl</code>, no operation is performed and
+the destination register is not updated.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+As a consequence, when <code>vl</code>=0, no elements are updated in the
+destination vector register group, regardless of <code>vstart</code>.
+</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect2">
@@ -6880,8 +6906,21 @@ than other offsets.
 </div>
 <div class="paragraph">
 <p>For all of the <code>vslideup</code>, <code>vslidedown</code>, <code>vslide1up</code>, and
-<code>vslide1down</code> instructions, if <code>vl</code>=0, the instruction performs no
+<code>vslide1down</code> instructions, if <code>vstart</code> &#8805; <code>vl</code>, the instruction performs no
 operation and leaves the destination vector register unchanged.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+As a consequence, when <code>vl</code>=0, no elements are updated in the
+destination vector register group, regardless of <code>vstart</code>.
+</td>
+</tr>
+</table>
 </div>
 <div class="sect3">
 <h4 id="_vector_slideup_instructions">17.4.1. Vector Slideup Instructions</h4>
@@ -8166,7 +8205,7 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">001001</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vfsgnn</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfsgnjn</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">001010</p></td>
@@ -8181,7 +8220,7 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">001010</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vfsgnx</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfsgnjx</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">001011</p></td>
@@ -9781,8 +9820,8 @@ function render (desc, opt) {
     opt = (typeof opt === 'object') ? opt : {};
 
     opt.vspace = isIntGTorDefault(opt.vspace, 19, 80);
-    opt.hspace = isIntGTorDefault(opt.hspace, 39, 640);
-    opt.lanes = isIntGTorDefault(opt.lanes, 0, 2);
+    opt.hspace = isIntGTorDefault(opt.hspace, 39, 800);
+    opt.lanes = isIntGTorDefault(opt.lanes, 0, 1);
     opt.bits = isIntGTorDefault(opt.bits, 4, 32);
     opt.fontsize = isIntGTorDefault(opt.fontsize, 5, 14);
 
