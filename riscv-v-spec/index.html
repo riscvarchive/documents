@@ -303,12 +303,12 @@ h2 {
 <li><a href="#_vector_extension_programmers_model">3. Vector Extension Programmer&#8217;s Model</a>
 <ul class="sectlevel2">
 <li><a href="#_vector_registers">3.1. Vector Registers</a></li>
-<li><a href="#_vector_start_index_csr_vstart">3.2. Vector Start Index CSR <code>vstart</code></a></li>
-<li><a href="#_vector_fixed_point_rounding_mode_register_vxrm">3.3. Vector Fixed-Point Rounding Mode Register <code>vxrm</code></a></li>
-<li><a href="#_vector_fixed_point_saturation_flag_vxsat">3.4. Vector Fixed-Point Saturation Flag <code>vxsat</code></a></li>
-<li><a href="#_vector_fixed_point_fields_in_fcsr">3.5. Vector Fixed-Point Fields in <code>fcsr</code></a></li>
-<li><a href="#_vector_type_register_vtype">3.6. Vector type register, <code>vtype</code></a></li>
-<li><a href="#_vector_length_register_vl">3.7. Vector Length Register <code>vl</code></a></li>
+<li><a href="#_vector_type_register_vtype">3.2. Vector type register, <code>vtype</code></a></li>
+<li><a href="#_vector_length_register_vl">3.3. Vector Length Register <code>vl</code></a></li>
+<li><a href="#_vector_start_index_csr_vstart">3.4. Vector Start Index CSR <code>vstart</code></a></li>
+<li><a href="#_vector_fixed_point_rounding_mode_register_vxrm">3.5. Vector Fixed-Point Rounding Mode Register <code>vxrm</code></a></li>
+<li><a href="#_vector_fixed_point_saturation_flag_vxsat">3.6. Vector Fixed-Point Saturation Flag <code>vxsat</code></a></li>
+<li><a href="#_vector_fixed_point_fields_in_fcsr">3.7. Vector Fixed-Point Fields in <code>fcsr</code></a></li>
 <li><a href="#_state_of_vector_extension_at_reset">3.8. State of Vector Extension at Reset</a></li>
 </ul>
 </li>
@@ -372,7 +372,8 @@ h2 {
 <li><a href="#_vector_widening_integer_multiply_instructions">12.10. Vector Widening Integer Multiply Instructions</a></li>
 <li><a href="#_vector_single_width_integer_multiply_add_instructions">12.11. Vector Single-Width Integer Multiply-Add Instructions</a></li>
 <li><a href="#_vector_widening_integer_multiply_add_instructions">12.12. Vector Widening Integer Multiply-Add Instructions</a></li>
-<li><a href="#_vector_integer_merge_instruction">12.13. Vector Integer Merge Instruction</a></li>
+<li><a href="#_vector_integer_divide_instructions">12.13. Vector Integer Divide Instructions</a></li>
+<li><a href="#_vector_integer_merge_instruction">12.14. Vector Integer Merge Instruction</a></li>
 </ul>
 </li>
 <li><a href="#_vector_fixed_point_arithmetic_instructions">13. Vector Fixed-Point Arithmetic Instructions</a>
@@ -633,13 +634,13 @@ RISC-V ISA.  If the base scalar ISA does not include floating-point,
 then a <code>fcsr</code> register is also added to hold mirrors of the <code>vxsat</code>
 and <code>vxrm</code> CSRs as explained below.</p>
 </div>
-<table class="tableblock frame-all grid-all stretch">
+<table class="tableblock frame-all grid-all fit-content">
 <caption class="title">Table 1. New vector CSRs</caption>
 <colgroup>
-<col style="width: 12.5%;">
-<col style="width: 12.5%;">
-<col style="width: 12.5%;">
-<col style="width: 62.5%;">
+<col>
+<col>
+<col>
+<col>
 </colgroup>
 <thead>
 <tr>
@@ -708,216 +709,11 @@ option.
 </div>
 </div>
 <div class="sect2">
-<h3 id="_vector_start_index_csr_vstart">3.2. Vector Start Index CSR <code>vstart</code></h3>
+<h3 id="_vector_type_register_vtype">3.2. Vector type register, <code>vtype</code></h3>
 <div class="paragraph">
-<p>The <code>vstart</code> read-write CSR specifies the index of the first element
-to be executed by a vector instruction.</p>
-</div>
-<div class="paragraph">
-<p>Normally, <code>vstart</code> is only written by hardware on a trap on a vector
-instruction, with the <code>vstart</code> value representing the element on which
-the trap was taken (either a synchronous exception or an asynchronous
-interrupt), and at which execution should resume after a resumable
-trap is handled.</p>
-</div>
-<div class="paragraph">
-<p>All vector instructions are defined to begin execution with the
-element number given in the <code>vstart</code> CSR, leaving earlier elements in
-the destination vector undisturbed, and to reset the <code>vstart</code> CSR to
-zero at the end of execution.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-All vector instructions, including <code>vsetvl{i}</code>, reset the <code>vstart</code>
-CSR to zero.
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>If the value in the <code>vstart</code> register is greater than or equal to the
-vector length <code>vl</code> then no element operations are performed, nor are the
-elements at the end of the destination vector past <code>vl</code> zeroed.  The
-<code>vstart</code> register is then reset to zero.</p>
-</div>
-<div class="paragraph">
-<p>The <code>vstart</code> CSR is defined to have only enough writable bits to hold
-the largest element index (one less than the maximum VLMAX) or
-lg2(VLEN) bits.  The upper bits of the <code>vstart</code> CSR are hardwired to
-zero (reads zero, writes ignored).</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-The maximum vector length is obtained with the largest LMUL
-setting (8) and the smallest SEW setting (8), so VLMAX_max = 8*VLEN/8
-= VLEN.  For example, for VLEN=256, <code>vstart</code> would have 8 bits to
-represent indices from 0 through 255.
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>The <code>vstart</code> CSR is writable by unprivileged code, but non-zero
-<code>vstart</code> values may cause vector instructions to run substantially
-slower on some implementations, so <code>vstart</code> should not be used by
-application programmers.  A few vector instructions can not be
-executed with a non-zero <code>vstart</code> value and will raise an illegal
-instruction exception as defined below.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_vector_fixed_point_rounding_mode_register_vxrm">3.3. Vector Fixed-Point Rounding Mode Register <code>vxrm</code></h3>
-<div class="paragraph">
-<p>The vector fixed-point rounding-mode register holds a two-bit
-read-write rounding-mode field.  The vector fixed-point rounding-mode
-is given a separate CSR address to allow independent access, but is
-also reflected as a field in the upper bits of <code>fcsr</code>.  Systems
-without floating-point must add <code>fcsr</code> when adding the vector
-extension.</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 2. vxrm encoding</caption>
-<colgroup>
-<col style="width: 6.25%;">
-<col style="width: 6.25%;">
-<col style="width: 25%;">
-<col style="width: 62.5%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top" colspan="2">Bits [1:0]</th>
-<th class="tableblock halign-left valign-top">Abbreviation</th>
-<th class="tableblock halign-left valign-top">Rounding Mode</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">rnu</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">round-to-nearest-up (add +0.5 LSB)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">rne</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">round-to-nearest-even</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">rdn</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">round-down (truncate)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">rod</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">round-to-odd (OR bits into LSB, aka "jam")</p></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>Bits[XLEN-1:2] should be written as zeros.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-The rounding mode can be set with a single <code>csrwi</code> instruction.
-</td>
-</tr>
-</table>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_vector_fixed_point_saturation_flag_vxsat">3.4. Vector Fixed-Point Saturation Flag <code>vxsat</code></h3>
-<div class="paragraph">
-<p>The <code>vxsat</code> CSR holds a single read-write bit that indicates if a
-fixed-point instruction has had to saturate an output value to fit
-into a destination format.</p>
-</div>
-<div class="paragraph">
-<p>The <code>vxsat</code> bit is mirrored in the upper bits of <code>fcsr</code>.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_vector_fixed_point_fields_in_fcsr">3.5. Vector Fixed-Point Fields in <code>fcsr</code></h3>
-<div class="paragraph">
-<p>The <code>vxrm</code> and <code>vxsat</code> separate CSRs can also be accessed via fields
-in the floating-point CSR, <code>fcsr</code>.  The <code>fcsr</code> register must be added
-to systems without floating-point that add a vector extension.</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 3. fcsr layout</caption>
-<colgroup>
-<col style="width: 12.5%;">
-<col style="width: 25%;">
-<col style="width: 62.5%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Bits</th>
-<th class="tableblock halign-left valign-top">Name</th>
-<th class="tableblock halign-left valign-top">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">10:9</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vxrm</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Fixed-point rounding mode</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vxsat</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Fixed-point accrued saturation flag</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">7:5</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">frm</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Floating-point rounding mode</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">4:0</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">fflags</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Floating-point accrued exception flags</p></td>
-</tr>
-</tbody>
-</table>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-The fields are packed into <code>fcsr</code> to make context-save/restore
-faster.
-</td>
-</tr>
-</table>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_vector_type_register_vtype">3.6. Vector type register, <code>vtype</code></h3>
-<div class="paragraph">
-<p>The read-only XLEN-wide <em>vector</em> <em>type</em> CSR, <code>vtype</code>, can only be
-updated by <code>vsetvl{i}</code> instructions, and provides the default type
-used to interpret the contents of the vector register file. The vector
+<p>The read-only XLEN-wide <em>vector</em> <em>type</em> CSR, <code>vtype</code> provides the
+default type used to interpret the contents of the vector register
+file, and can only be updated by <code>vsetvl{i}</code> instructions. The vector
 type also determines the organization of elements in each vector
 register, and how multiple vector registers are grouped.</p>
 </div>
@@ -936,46 +732,46 @@ instructions simplifies maintenance of the <code>vtype</code> register state.
 </table>
 </div>
 <div class="paragraph">
-<p>In the base vector extension, the <code>type</code> register has three fields,
+<p>In the base vector extension, the <code>vtype</code> register has three fields,
 <code>vill</code>, <code>vsew[2:0]</code>, and <code>vlmul[1:0]</code>.</p>
 </div>
-<table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 4. <code>vtype</code> register layout</caption>
+<table class="tableblock frame-all grid-all fit-content">
+<caption class="title">Table 2. <code>vtype</code> register layout</caption>
 <colgroup>
-<col style="width: 12.5%;">
-<col style="width: 25%;">
-<col style="width: 62.5%;">
+<col>
+<col>
+<col>
 </colgroup>
 <thead>
 <tr>
-<th class="tableblock halign-left valign-top">Bits</th>
+<th class="tableblock halign-right valign-top">Bits</th>
 <th class="tableblock halign-left valign-top">Name</th>
 <th class="tableblock halign-left valign-top">Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">XLEN-1</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">XLEN-1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vill</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Illegal value if set</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">XLEN-2:7</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">XLEN-2:7</p></td>
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Reserved (write 0)</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">6:5</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">6:5</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vediv[1:0]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Used by EDIV extension</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">4:2</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">4:2</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vsew[2:0]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Standard element width (SEW) setting</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">1:0</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">1:0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vlmul[1:0]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Vector register group multiplier (LMUL) setting</p></td>
 </tr>
@@ -990,9 +786,9 @@ instructions simplifies maintenance of the <code>vtype</code> register state.
 <td class="content">
 The smallest base implementation requires storage for only four
 bits of storage in <code>vtype</code>, two bits for <code>vsew[1:0]</code> and two bits for
-<code>vlmul[1:0]</code>.  The illegal value can be encoded using the illegal
-64-bit combination in <code>vsew[1:0]</code> without requiring an additional
-storage bit.
+<code>vlmul[1:0]</code>.  The illegal value represented by <code>vill</code> can be encoded
+using the illegal 64-bit combination in <code>vsew[1:0]</code> without requiring
+an additional storage bit.
 </td>
 </tr>
 </table>
@@ -1029,28 +825,28 @@ extend these fields to support a greater variety of data types.
 <div class="title">Note</div>
 </td>
 <td class="content">
-An extended instruction encoding length would allow these fields
-to be specified in the instruction encoding, though <code>vlmul</code> might want
-to be varied with AVL.
+It is anticipated that an extended 64-bit instruction encoding
+would allow these fields to be specified statically in the instruction
+encoding.
 </td>
 </tr>
 </table>
 </div>
 <div class="sect3">
-<h4 id="_vector_standard_element_width_vsew">3.6.1. Vector standard element width <code>vsew</code></h4>
+<h4 id="_vector_standard_element_width_vsew">3.2.1. Vector standard element width <code>vsew</code></h4>
 <div class="paragraph">
 <p>The value in <code>vsew</code> sets the dynamic <em>standard</em> <em>element</em> <em>width</em>
 (SEW).  By default, a vector register is viewed as being divided into
 VLEN / SEW standard-width elements.  In the base vector extension,
 only SEW up to max(XLEN,FLEN) are required to be supported.</p>
 </div>
-<table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 5. vsew[2:0] (standard element width) encoding</caption>
+<table class="tableblock frame-all grid-all fit-content">
+<caption class="title">Table 3. vsew[2:0] (standard element width) encoding</caption>
 <colgroup>
-<col style="width: 6.25%;">
-<col style="width: 6.25%;">
-<col style="width: 6.25%;">
-<col style="width: 81.25%;">
+<col>
+<col>
+<col>
+<col>
 </colgroup>
 <thead>
 <tr>
@@ -1063,86 +859,86 @@ only SEW up to max(XLEN,FLEN) are required to be supported.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">8</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">16</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">32</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">64</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">64</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">128</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">128</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">256</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">256</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">512</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">512</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">1024</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">1024</p></td>
 </tr>
 </tbody>
 </table>
-<table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 6. Example VLEN = 128 bits</caption>
+<table class="tableblock frame-all grid-all fit-content">
+<caption class="title">Table 4. Example VLEN = 128 bits</caption>
 <colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
+<col>
+<col>
 </colgroup>
 <thead>
 <tr>
-<th class="tableblock halign-left valign-top">SEW</th>
-<th class="tableblock halign-left valign-top">Elements per vector register</th>
+<th class="tableblock halign-right valign-top">SEW</th>
+<th class="tableblock halign-right valign-top">Elements per vector register</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">64</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">64</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">2</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">32</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">4</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">8</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">16</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="sect3">
-<h4 id="_vector_register_grouping_vlmul">3.6.2. Vector Register Grouping (<code>vlmul</code>)</h4>
+<h4 id="_vector_register_grouping_vlmul">3.2.2. Vector Register Grouping (<code>vlmul</code>)</h4>
 <div class="paragraph">
 <p>Multiple vector registers can be grouped together to form a <em>vector</em>
 <em>register</em> <em>group</em>, so that a single vector instruction can operate on
@@ -1153,18 +949,21 @@ execution efficiency for longer application vectors.</p>
 </div>
 <div class="paragraph">
 <p>The number of vector registers in a group, <em>LMUL</em>, is an integer power
-of two set by the <code>vlmul</code> field in <code>vtype</code> (LMUL = 2<sup><code>vlmul[1:0]</code></sup>).
-The maximum vector length possible in a single vector instruction,
-VLMAX, is then increased by a factor of LMUL.</p>
+of two set by the <code>vlmul</code> field in <code>vtype</code> (LMUL = 2<sup><code>vlmul[1:0]</code></sup>).</p>
 </div>
-<table class="tableblock frame-all grid-all stretch">
+<div class="paragraph">
+<p>The derived value VLMAX = LMUL*VLEN/SEW represents the maximum number
+of elements that can be operated on with a single vector instruction
+given the current SEW and LMUL settings.</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
 <colgroup>
-<col style="width: 6.25%;">
-<col style="width: 6.25%;">
-<col style="width: 12.5%;">
-<col style="width: 12.5%;">
-<col style="width: 31.25%;">
-<col style="width: 31.25%;">
+<col>
+<col>
+<col>
+<col>
+<col>
+<col>
 </colgroup>
 <thead>
 <tr>
@@ -1250,7 +1049,7 @@ regardless of LMUL setting.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_vector_type_illegal_vill">3.6.3. Vector Type Illegal <code>vill</code></h4>
+<h4 id="_vector_type_illegal_vill">3.2.3. Vector Type Illegal <code>vill</code></h4>
 <div class="paragraph">
 <p>The <code>vill</code> bit is used to encode that a previous <code>vsetvl{i}</code>
 instruction attempted to write an unsupported value to <code>vtype</code>.</p>
@@ -1280,7 +1079,7 @@ zero.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_vector_length_register_vl">3.7. Vector Length Register <code>vl</code></h3>
+<h3 id="_vector_length_register_vl">3.3. Vector Length Register <code>vl</code></h3>
 <div class="paragraph">
 <p>The <em>XLEN</em>-bit-wide read-only <code>vl</code> CSR can only be updated by the
 <code>vsetvli</code> and <code>vsetvl</code> instructions, and the <em>fault-only-first</em> vector load
@@ -1318,6 +1117,211 @@ implementation&#8217;s maximum vector length of the smallest supported
 type. The smallest vector implementation, RV32IV, would need at least
 six bits in <code>vl</code> to hold the values 0-32 (with VLEN=32, LMUL=8 and
 SEW=8 results in VLMAX of 32).
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vector_start_index_csr_vstart">3.4. Vector Start Index CSR <code>vstart</code></h3>
+<div class="paragraph">
+<p>The <code>vstart</code> read-write CSR specifies the index of the first element
+to be executed by a vector instruction.</p>
+</div>
+<div class="paragraph">
+<p>Normally, <code>vstart</code> is only written by hardware on a trap on a vector
+instruction, with the <code>vstart</code> value representing the element on which
+the trap was taken (either a synchronous exception or an asynchronous
+interrupt), and at which execution should resume after a resumable
+trap is handled.</p>
+</div>
+<div class="paragraph">
+<p>All vector instructions are defined to begin execution with the
+element number given in the <code>vstart</code> CSR, leaving earlier elements in
+the destination vector undisturbed, and to reset the <code>vstart</code> CSR to
+zero at the end of execution.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+All vector instructions, including <code>vsetvl{i}</code>, reset the <code>vstart</code>
+CSR to zero.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>If the value in the <code>vstart</code> register is greater than or equal to the
+vector length <code>vl</code> then no element operations are performed, nor are the
+elements at the end of the destination vector past <code>vl</code> zeroed.  The
+<code>vstart</code> register is then reset to zero.</p>
+</div>
+<div class="paragraph">
+<p>The <code>vstart</code> CSR is defined to have only enough writable bits to hold
+the largest element index (one less than the maximum VLMAX) or
+lg2(VLEN) bits.  The upper bits of the <code>vstart</code> CSR are hardwired to
+zero (reads zero, writes ignored).</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The maximum vector length is obtained with the largest LMUL
+setting (8) and the smallest SEW setting (8), so VLMAX_max = 8*VLEN/8
+= VLEN.  For example, for VLEN=256, <code>vstart</code> would have 8 bits to
+represent indices from 0 through 255.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The <code>vstart</code> CSR is writable by unprivileged code, but non-zero
+<code>vstart</code> values may cause vector instructions to run substantially
+slower on some implementations, so <code>vstart</code> should not be used by
+application programmers.  A few vector instructions can not be
+executed with a non-zero <code>vstart</code> value and will raise an illegal
+instruction exception as defined below.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vector_fixed_point_rounding_mode_register_vxrm">3.5. Vector Fixed-Point Rounding Mode Register <code>vxrm</code></h3>
+<div class="paragraph">
+<p>The vector fixed-point rounding-mode register holds a two-bit
+read-write rounding-mode field.  The vector fixed-point rounding-mode
+is given a separate CSR address to allow independent access, but is
+also reflected as a field in the upper bits of <code>fcsr</code>.  Systems
+without floating-point must add <code>fcsr</code> when adding the vector
+extension.</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<caption class="title">Table 5. vxrm encoding</caption>
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top" colspan="2">Bits [1:0]</th>
+<th class="tableblock halign-left valign-top">Abbreviation</th>
+<th class="tableblock halign-left valign-top">Rounding Mode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rnu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">round-to-nearest-up (add +0.5 LSB)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rne</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">round-to-nearest-even</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rdn</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">round-down (truncate)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rod</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">round-to-odd (OR bits into LSB, aka "jam")</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Bits[XLEN-1:2] should be written as zeros.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The rounding mode can be set with a single <code>csrwi</code> instruction.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vector_fixed_point_saturation_flag_vxsat">3.6. Vector Fixed-Point Saturation Flag <code>vxsat</code></h3>
+<div class="paragraph">
+<p>The <code>vxsat</code> CSR holds a single read-write bit that indicates if a
+fixed-point instruction has had to saturate an output value to fit
+into a destination format.</p>
+</div>
+<div class="paragraph">
+<p>The <code>vxsat</code> bit is mirrored in the upper bits of <code>fcsr</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vector_fixed_point_fields_in_fcsr">3.7. Vector Fixed-Point Fields in <code>fcsr</code></h3>
+<div class="paragraph">
+<p>The <code>vxrm</code> and <code>vxsat</code> separate CSRs can also be accessed via fields
+in the floating-point CSR, <code>fcsr</code>.  The <code>fcsr</code> register must be added
+to systems without floating-point that add a vector extension.</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<caption class="title">Table 6. fcsr layout</caption>
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-right valign-top">Bits</th>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-right valign-top"><p class="tableblock">10:9</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vxrm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fixed-point rounding mode</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-right valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vxsat</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fixed-point accrued saturation flag</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-right valign-top"><p class="tableblock">7:5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">frm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Floating-point rounding mode</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-right valign-top"><p class="tableblock">4:0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fflags</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Floating-point accrued exception flags</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The fields are packed into <code>fcsr</code> to make context-save/restore
+faster.
 </td>
 </tr>
 </table>
@@ -2369,43 +2373,43 @@ arguments, and writes the new value of <code>vl</code> into <code>rd</code>.</p>
  1        6            5          5        3        5        7</pre>
 </div>
 </div>
-<table class="tableblock frame-all grid-all stretch">
+<table class="tableblock frame-all grid-all fit-content">
 <caption class="title">Table 7. <code>vtype</code> register layout</caption>
 <colgroup>
-<col style="width: 12.5%;">
-<col style="width: 25%;">
-<col style="width: 62.5%;">
+<col>
+<col>
+<col>
 </colgroup>
 <thead>
 <tr>
-<th class="tableblock halign-left valign-top">Bits</th>
+<th class="tableblock halign-right valign-top">Bits</th>
 <th class="tableblock halign-left valign-top">Name</th>
 <th class="tableblock halign-left valign-top">Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">XLEN-1</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">XLEN-1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vill</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Illegal value if set</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">XLEN-2:7</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">XLEN-2:7</p></td>
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Reserved (write 0)</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">6:5</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">6:5</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vediv[1:0]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Used by EDIV extension</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">4:2</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">4:2</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vsew[2:0]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Standard element width (SEW) setting</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">1:0</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">1:0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vlmul[1:0]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Vector register group multiplier (LMUL) setting</p></td>
 </tr>
@@ -3553,6 +3557,9 @@ field to be stored in each segment.</p>
 <p>Vector strided segment loads and stores move contiguous segments where
 each segment is separated by the byte stride offset given in the <code>rs2</code>
 GPR argument.</p>
+</div>
+<div class="paragraph">
+<p>Note: Negative and zero strides are supported.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -4949,8 +4956,9 @@ There is no signed-unsigned widening multiply-add instruction.
 </tr>
 </table>
 </div>
-<div class="sect3">
-<h4 id="_vector_integer_divide_instructions">12.12.1. Vector Integer Divide Instructions</h4>
+</div>
+<div class="sect2">
+<h3 id="_vector_integer_divide_instructions">12.13. Vector Integer Divide Instructions</h3>
 <div class="paragraph">
 <p>The divide and remainder instructions are equivalent to the RISC-V
 standard scalar integer multiply/divides, with the same results for
@@ -5005,9 +5013,8 @@ operation.
 </table>
 </div>
 </div>
-</div>
 <div class="sect2">
-<h3 id="_vector_integer_merge_instruction">12.13. Vector Integer Merge Instruction</h3>
+<h3 id="_vector_integer_merge_instruction">12.14. Vector Integer Merge Instruction</h3>
 <div class="paragraph">
 <p>The vector integer merge instruction combines two source operands
 based on the mask field.  Unlike regular arithmetic instructions, the
@@ -6684,6 +6691,11 @@ destination vector register group, from 0 to <code>vl</code>-1.</p>
 <p>The instruction can be masked.</p>
 </div>
 <div class="paragraph">
+<p>The result value is zero-extended to fill the destination element if
+SEW is wider than the result.  If the result value would overflow the
+destination SEW, the least-significant SEW bits are retained.</p>
+</div>
+<div class="paragraph">
 <p>An illegal instruction exception is generated if the destination
 vector register group overlaps the mask register and LMUL &gt; 1.</p>
 </div>
@@ -7393,43 +7405,43 @@ part of mandatory base in Unix vector profile.
 <p>The divided element extension adds a two-bit field, <code>vediv[1:0]</code> to
 the <code>vtype</code> register.</p>
 </div>
-<table class="tableblock frame-all grid-all stretch">
+<table class="tableblock frame-all grid-all fit-content">
 <caption class="title">Table 15. <code>vtype</code> register layout</caption>
 <colgroup>
-<col style="width: 12.5%;">
-<col style="width: 25%;">
-<col style="width: 62.5%;">
+<col>
+<col>
+<col>
 </colgroup>
 <thead>
 <tr>
-<th class="tableblock halign-left valign-top">Bits</th>
+<th class="tableblock halign-right valign-top">Bits</th>
 <th class="tableblock halign-left valign-top">Name</th>
 <th class="tableblock halign-left valign-top">Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">XLEN-1</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">XLEN-1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vill</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Illegal value if set</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">XLEN-2:7</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">XLEN-2:7</p></td>
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Reserved (write 0)</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">6:5</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">6:5</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vediv[1:0]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Used by EDIV extension</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">4:2</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">4:2</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vsew[2:0]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Standard element width (SEW) setting</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">1:0</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">1:0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vlmul[1:0]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Vector register group multiplier (LMUL) setting</p></td>
 </tr>
