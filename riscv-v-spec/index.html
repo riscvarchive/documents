@@ -369,11 +369,11 @@ h2 {
 <li><a href="#_vector_integer_comparison_instructions">12.7. Vector Integer Comparison Instructions</a></li>
 <li><a href="#_vector_integer_minmax_instructions">12.8. Vector Integer Min/Max Instructions</a></li>
 <li><a href="#_vector_single_width_integer_multiply_instructions">12.9. Vector Single-Width Integer Multiply Instructions</a></li>
-<li><a href="#_vector_widening_integer_multiply_instructions">12.10. Vector Widening Integer Multiply Instructions</a></li>
-<li><a href="#_vector_single_width_integer_multiply_add_instructions">12.11. Vector Single-Width Integer Multiply-Add Instructions</a></li>
-<li><a href="#_vector_widening_integer_multiply_add_instructions">12.12. Vector Widening Integer Multiply-Add Instructions</a></li>
-<li><a href="#_vector_integer_divide_instructions">12.13. Vector Integer Divide Instructions</a></li>
-<li><a href="#_vector_integer_merge_instruction">12.14. Vector Integer Merge Instruction</a></li>
+<li><a href="#_vector_integer_divide_instructions">12.10. Vector Integer Divide Instructions</a></li>
+<li><a href="#_vector_widening_integer_multiply_instructions">12.11. Vector Widening Integer Multiply Instructions</a></li>
+<li><a href="#_vector_single_width_integer_multiply_add_instructions">12.12. Vector Single-Width Integer Multiply-Add Instructions</a></li>
+<li><a href="#_vector_widening_integer_multiply_add_instructions">12.13. Vector Widening Integer Multiply-Add Instructions</a></li>
+<li><a href="#_vector_integer_merge_and_move_instructions">12.14. Vector Integer Merge and Move Instructions</a></li>
 </ul>
 </li>
 <li><a href="#_vector_fixed_point_arithmetic_instructions">13. Vector Fixed-Point Arithmetic Instructions</a>
@@ -1188,6 +1188,28 @@ slower on some implementations, so <code>vstart</code> should not be used by
 application programmers.  A few vector instructions can not be
 executed with a non-zero <code>vstart</code> value and will raise an illegal
 instruction exception as defined below.</p>
+</div>
+<div class="paragraph">
+<p>Implementations are permitted to raise illegal instruction exceptions when
+attempting to execute a vector instruction with a value of <code>vstart</code> that the
+implementation can never produce when executing that same instruction with
+the same <code>vtype</code> setting.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+For example, some implementations will never take interrupts during
+execution of a vector arithmetic instruction, instead waiting until the
+instruction completes to take the interrupt.  Such implementations are
+permitted to raise an illegal instruction exception when attempting to execute
+a vector arithmetic instruction when <code>vstart</code> is nonzero.
+</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect2">
@@ -3311,7 +3333,7 @@ loop:
     vsetvli a1, x0, e8  # Vector of bytes of maximum length
     vlbff.v v1, (a3)      # Load bytes
     csrr a1, vl           # Get bytes read
-    vseq.vi v0, v1, 0     # Set v0[i] where v1[i] = 0
+    vmseq.vi v0, v1, 0    # Set v0[i] where v1[i] = 0
     vmfirst.m a2, v0      # Find first set bit
     add a3, a3, a1        # Bump pointer
     bltz a2, loop         # Not found?
@@ -3456,11 +3478,23 @@ each field will be held in successively numbered vector registers.  If
 LMUL &gt; 1, an illegal instruction exception will be raised.</p>
 </div>
 <div class="paragraph">
-<p>The <code>vl</code> register gives the number of structures to move, which is
-equal to the number of elements transferred to each vector register.</p>
+<p>If the vector register numbers accessed by the segment load or store
+would increment past 31, then an illegal instruction exception is
+raised.</p>
 </div>
-<div class="paragraph">
-<p>If a trap is taken, <code>vstart</code> is in units of structures.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+This constraint is to help provide forward-compatibility with a
+future longer instruction encoding that has more addressable vector
+registers.
+</td>
+</tr>
+</table>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -3475,6 +3509,13 @@ was not a power of 2.
 </td>
 </tr>
 </table>
+</div>
+<div class="paragraph">
+<p>The <code>vl</code> register gives the number of structures to move, which is
+equal to the number of elements transferred to each vector register.</p>
+</div>
+<div class="paragraph">
+<p>If a trap is taken, <code>vstart</code> is in units of structures.</p>
 </div>
 <div class="sect3">
 <h4 id="_vector_unit_stride_segment_loads_and_stores">7.8.1. Vector Unit-Stride Segment Loads and Stores</h4>
@@ -3579,6 +3620,11 @@ GPR argument.</p>
                               #   and words from v3[i] to address x5+i*x6+4</pre>
 </div>
 </div>
+<div class="paragraph">
+<p>For strided segment stores where the byte stride is such that segments
+could overlap in memory, the segments must appear to be written in
+element order.</p>
+</div>
 </div>
 <div class="sect3">
 <h4 id="_vector_indexed_segment_loads_and_stores">7.8.3. Vector Indexed Segment Loads and Stores</h4>
@@ -3604,6 +3650,10 @@ address in the <code>rs1</code> field to byte offsets in vector register <code>v
     vsxseg2w.v v2, (x5), v5   # Store words from v2[i] to address x5+v5[i]
                               #   and words from v3[i] to address x5+v5[i]+4</pre>
 </div>
+</div>
+<div class="paragraph">
+<p>Only ordered indexed segment stores are provided. The segments must
+appear to be written in element order.</p>
 </div>
 </div>
 </div>
@@ -4198,6 +4248,19 @@ registers.</p>
 generally written with a <code>vw*</code> prefix on the opcode or <code>vfw*</code> for
 vector floating-point operations.</p>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre>Assembly syntax pattern for vector widening arithmetic instructions
+
+# Double-width result, two single-width sources: 2*SEW = SEW op SEW
+vwop.vv  vd, vs2, vs1, vm  # integer vector-vector      vd[i] = vs2[i] op vs1[i]
+vwop.vx  vd, vs2, rs1, vm  # integer vector-scalar      vd[i] = vs2[i] op x[rs1]
+
+# Double-width result, first source double-width, second source single-width: 2*SEW = 2*SEW op SEW
+vwop.wv  vd, vs2, vs1, vm  # integer vector-vector      vd[i] = vs2[i] op vs1[i]
+vwop.wx  vd, vs2, rs1, vm  # integer vector-scalar      vd[i] = vs2[i] op x[rs1]</pre>
+</div>
+</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -4261,8 +4324,9 @@ otherwise an illegal instruction exception is raised.</p>
 </div>
 <div class="paragraph">
 <p>The destination vector register group cannot overlap a source vector
-register group (including the mask register if masked), otherwise an
-illegal instruction exception is raised.</p>
+register group of a different element width (including the mask
+register if masked), otherwise an illegal instruction exception is
+raised.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -4277,18 +4341,18 @@ This constraint is necessary to support restart with non-zero
 </tr>
 </table>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>Assembly syntax pattern for vector widening arithmetic instructions
-
-# Double-width result, two single-width sources: 2*SEW = SEW op SEW
-vwop.vv  vd, vs2, vs1, vm  # integer vector-vector      vd[i] = vs2[i] op vs1[i]
-vwop.vx  vd, vs2, rs1, vm  # integer vector-scalar      vd[i] = vs2[i] op x[rs1]
-
-# Double-width result, first source double-width, second source single-width: 2*SEW = 2*SEW op SEW
-vwop.wv  vd, vs2, vs1, vm  # integer vector-vector      vd[i] = vs2[i] op vs1[i]
-vwop.wx  vd, vs2, rs1, vm  # integer vector-scalar      vd[i] = vs2[i] op x[rs1]</pre>
-</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+For the <code>vw&lt;op&gt;.wv vd, vs2, vs1</code> format instructions, it is legal
+for vd to equal vs2.
+</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect2">
@@ -4432,47 +4496,111 @@ pseudoinstructions <code>vwcvt.x.x.v vd,vs,vm = vwadd.vx vd,vs,x0,vm</code> and
 <div class="sect2">
 <h3 id="_vector_integer_add_with_carry_subtract_with_borrow_instructions">12.3. Vector Integer Add-with-Carry / Subtract-with-Borrow Instructions</h3>
 <div class="paragraph">
-<p>To support multi-word arithmetic:</p>
+<p>To support multi-word integer arithmetic, instructions that operate on
+a carry bit are provided.  For each operation (add or subtract), two
+instructions are provided: one to provide the result (SEW width), and
+the second to generate the carry output (single bit encoded as a mask
+boolean).</p>
+</div>
+<div class="paragraph">
+<p>These instructions are encoded as unmasked instructions (vm=1) and
+operate on all body elements.  Encodings corresponding to the masked
+versions (vm=0) of these instructions are reserved.</p>
+</div>
+<div class="paragraph">
+<p>The carry inputs and outputs are represented using the mask register
+layout as described in Section <a href="#sec-mask-register-layout">Mask Register Layout</a>.  Due to
+encoding constraints, the carry input must come from the implicit <code>v0</code>
+register, but carry outputs can be written to any vector register that
+respects the source/destination overlap restrictions below.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre> # vd[i] = vs1[i] + vs2[i] + v0[i].LSB
- # v0[i] = carry(vs1[i] + vs2[i] + v0[i].LSB)
+<pre> # Produce sum with carry.
 
- vadc.vv   vd, vs2, vs1  # Vector-vector
- vadc.vx   vd, vs2, rs1  # Vector-scalar
- vadc.vi   vd, vs2, imm  # Vector-scalar</pre>
+# vd[i] = vs2[i] + vs1[i] + v0[i].LSB
+ vadc.vvm   vd, vs2, vs1, v0  # Vector-vector
+
+ # vd[i] = vs2[i] + x[rs1] + v0[i].LSB
+ vadc.vxm   vd, vs2, rs1, v0  # Vector-scalar
+
+ # vd[i] = vs2[i] + imm + v0[i].LSB
+ vadc.vim   vd, vs2, imm, v0  # Vector-immediate
+
+ # Produce carry out in mask register format
+
+# vd[i] = carry_out(vs2[i] + vs1[i] + v0[i].LSB)
+ vmadc.vvm   vd, vs2, vs1, v0  # Vector-vector
+
+ # vd[i] = carry_out(vs2[i] + x[rs1] + v0[i].LSB)
+ vmadc.vxm   vd, vs2, rs1, v0  # Vector-scalar
+
+ # vd[i] = carry_out(vs2[i] + imm + v0[i].LSB)
+ vmadc.vim   vd, vs2, imm, v0  # Vector-immediate</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>This instruction is encoded as an unmasked instruction (vm=1) and
-operates on all body elements.  The instruction adds the two source
-operands and also adds in the LSB of the implicit mask register <code>v0</code>
-as an implicit carry input.  The sum is stored in the destination
-vector register group.  The mask element in <code>v0</code> is written with the
-carry result in the LSB and the upper bits of the mask element are set
-to 0.</p>
-</div>
-<div class="paragraph">
-<p>The subtract with carry instruction <code>vsbc</code> performs the equivalent
-function to support long word arithmetic for subtraction.</p>
+<p>Because implementing a carry propagation requires executing two
+instructions with unchanged inputs, destructive accumulations will
+require an additional move to obtain correct results.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre> # vd[i] = vs1[i] - vs2[i] - v0[i].LSB
- # v0[i] = carry(vs1[i] - vs2[i] - v0[i].LSB)
+<pre>  # Example multi-word arithmetic sequence, accumulating into v4
+  vmadc.vvm v1, v4, v8, v0  # Get carry into temp register v1
+  vadc.vvm v4, v4, v8, v0   # Calc new sum
+  vmmv.m v0, v1             # Move temp carry into v0 for next word</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The subtract with borrow instruction <code>vsbc</code> performs the equivalent
+function to support long word arithmetic for subtraction.  There are
+no subtract with immediate instructions.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre> # Produce difference with borrow.
 
- vsbc.vv   vd, vs2, vs1  # Vector-vector
- vsbc.vx   vd, vs2, rs1  # Vector-scalar</pre>
+# vd[i] = vs2[i] - vs1[i] - v0[i].LSB
+ vsbc.vvm   vd, vs2, vs1, v0  # Vector-vector
+
+ # vd[i] = vs2[i] - x[rs1] - v0[i].LSB
+ vsbc.vxm   vd, vs2, rs1, v0  # Vector-scalar
+
+ # Produce borrow out in mask register format
+
+ # vd[i] = borrow_out(vs2[i] - vs1[i] - v0[i].LSB)
+ vmsbc.vvm   vd, vs2, vs1, v0  # Vector-vector
+
+ # vd[i] = borrow_out(vs2[i] - x[rs1] - v0[i].LSB)
+ vmsbc.vxm   vd, vs2, rs1, v0  # Vector-scalar</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>The encodings corresponding to the masked versions (vm=0) of <code>vadc</code>
-and <code>vsbc</code> are reserved.</p>
+<p>For <code>vmsbc</code>, the borrow is defined to be 1 iff the difference, prior to
+truncation, is negative.</p>
 </div>
 <div class="paragraph">
-<p>For both <code>vadc</code> and <code>vsbc</code>, an illegal instruction exception is raised if the
-destination vector register is <code>v0</code>.</p>
+<p>For <code>vadc</code> and <code>vsbc</code>, an illegal instruction exception is raised
+if the destination vector register is <code>v0</code> and LMUL &gt; 1.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+This constraint corresponds to the constraint on masked vector
+operations that overwrite the mask register.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For <code>vmadc</code> and <code>vmsbc</code>, an illegal instruction exception is raised if
+the destination vector register overlaps a source vector register
+group.</p>
 </div>
 </div>
 <div class="sect2">
@@ -4590,46 +4718,46 @@ Section <a href="#sec-mask-register-layout">Mask Register Layout</a>.</p>
 <div class="listingblock">
 <div class="content">
 <pre># Set if equal
-vseq.vv vd, vs2, vs1, vm   # Vector-vector
-vseq.vx vd, vs2, rs1, vm   # vector-scalar
-vseq.vi vd, vs2, imm, vm   # vector-immediate
+vmseq.vv vd, vs2, vs1, vm  # Vector-vector
+vmseq.vx vd, vs2, rs1, vm  # vector-scalar
+vmseq.vi vd, vs2, imm, vm  # vector-immediate
 
 # Set if not equal
-vsne.vv vd, vs2, vs1, vm   # Vector-vector
-vsne.vx vd, vs2, rs1, vm   # vector-scalar
-vsne.vi vd, vs2, imm, vm   # vector-immediate
+vmsne.vv vd, vs2, vs1, vm  # Vector-vector
+vmsne.vx vd, vs2, rs1, vm  # vector-scalar
+vmsne.vi vd, vs2, imm, vm  # vector-immediate
 
 # Set if less than, unsigned
-vsltu.vv vd, vs2, vs1, vm   # Vector-vector
-vsltu.vx vd, vs2, rs1, vm   # Vector-scalar
+vmsltu.vv vd, vs2, vs1, vm  # Vector-vector
+vmsltu.vx vd, vs2, rs1, vm  # Vector-scalar
 
 # Set if less than, signed
-vslt.vv vd, vs2, vs1, vm   # Vector-vector
-vslt.vx vd, vs2, rs1, vm   # vector-scalar
+vmslt.vv vd, vs2, vs1, vm  # Vector-vector
+vmslt.vx vd, vs2, rs1, vm  # vector-scalar
 
 # Set if less than or equal, unsigned
-vsleu.vv vd, vs2, vs1, vm   # Vector-vector
-vsleu.vx vd, vs2, rs1, vm   # vector-scalar
-vsleu.vi vd, vs2, imm, vm   # Vector-immediate
+vmsleu.vv vd, vs2, vs1, vm   # Vector-vector
+vmsleu.vx vd, vs2, rs1, vm   # vector-scalar
+vmsleu.vi vd, vs2, imm, vm   # Vector-immediate
 
 # Set if less than or equal, signed
-vsle.vv vd, vs2, vs1, vm   # Vector-vector
-vsle.vx vd, vs2, rs1, vm   # vector-scalar
-vsle.vi vd, vs2, imm, vm   # vector-immediate
+vmsle.vv vd, vs2, vs1, vm  # Vector-vector
+vmsle.vx vd, vs2, rs1, vm  # vector-scalar
+vmsle.vi vd, vs2, imm, vm  # vector-immediate
 
 # Set if greater than, unsigned
-vsgtu.vx vd, vs2, rs1, vm    # Vector-scalar
-vsgtu.vi vd, vs2, imm, vm    # Vector-immediate
+vmsgtu.vx vd, vs2, rs1, vm   # Vector-scalar
+vmsgtu.vi vd, vs2, imm, vm   # Vector-immediate
 
 # Set if greater than, signed
-vsgt.vx vd, vs2, rs1, vm    # Vector-scalar
-vsgt.vi vd, vs2, imm, vm    # Vector-immediate
+vmsgt.vx vd, vs2, rs1, vm    # Vector-scalar
+vmsgt.vi vd, vs2, imm, vm    # Vector-immediate
 
 # Following two instructions are not provided directly
 # Set if greater than or equal, unsigned
-# vsgeu.vx vd, vs2, rs1, vm    # Vector-scalar
+# vmsgeu.vx vd, vs2, rs1, vm    # Vector-scalar
 # Set if greater than or equal, signed
-# vsge.vx vd, vs2, rs1, vm    # Vector-scalar</pre>
+# vmsge.vx vd, vs2, rs1, vm    # Vector-scalar</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -4640,20 +4768,20 @@ native machine code.</p>
 <div class="content">
 <pre>Comparison      Assembler Mapping             Assembler Pseudoinstruction
 
-va &lt; vb         vslt{u}.vv vd, va, vb, vm
-va &lt;= vb        vsle{u}.vv vd, va, vb, vm
-va &gt; vb         vslt{u}.vv vd, vb, va, vm     vsgt{u}.vv vd, va, vb, vm
-va &gt;= vb        vsle{u}.vv vd, vb, va, vm     vsge{u}.vv vd, va, vb, vm
+va &lt; vb         vmslt{u}.vv vd, va, vb, vm
+va &lt;= vb        vmsle{u}.vv vd, va, vb, vm
+va &gt; vb         vmslt{u}.vv vd, vb, va, vm    vmsgt{u}.vv vd, va, vb, vm
+va &gt;= vb        vmsle{u}.vv vd, vb, va, vm    vmsge{u}.vv vd, va, vb, vm
 
-va &lt; x          vslt{u}.vx vd, va, x, vm
-va &lt;= x         vsle{u}.vx vd, va, x, vm
-va &gt; x          vsgt{u}.vx vd, va, x, vm
+va &lt; x          vmslt{u}.vx vd, va, x, vm
+va &lt;= x         vmsle{u}.vx vd, va, x, vm
+va &gt; x          vmsgt{u}.vx vd, va, x, vm
 va &gt;= x         see below
 
-va &lt; i          vsle{u}.vi vd, va, i-1, vm    vslt{u}.vi vd, va, i, vm
-va &lt;= i         vsle{u}.vi vd, va, i, vm
-va &gt; i          vsgt{u}.vi vd, va, i, vm
-va &gt;= i         vsgt{u}.vi vd, va, i-1, vm    vsge{u}.vi vd, va, i, vm
+va &lt; i          vmsle{u}.vi vd, va, i-1, vm    vmslt{u}.vi vd, va, i, vm
+va &lt;= i         vmsle{u}.vi vd, va, i, vm
+va &gt; i          vmsgt{u}.vi vd, va, i, vm
+va &gt;= i         vmsgt{u}.vi vd, va, i-1, vm    vmsge{u}.vi vd, va, i, vm
 
 va, vb vector register groups
 x      scalar integer register
@@ -4667,16 +4795,16 @@ i      immediate</pre>
 <div class="title">Note</div>
 </td>
 <td class="content">
-The immediate forms of <code>vslt{u}.vi</code> are not provided as the
-immediate value can be decreased by 1 and the <code>vsle{u}.vi</code> variants
-used instead.  The <code>vsle.vi</code> range is -16 to 15, resulting in an
-effective <code>vslt.vi</code> range of -15 to 16.  The <code>vsleu.vi</code> range is 0 to
-15 (and <code>(~0)-15</code> to <code>~0</code>), giving an effective <code>vsltu.vi</code> range of 1 to 16
-(Note, <code>vsltu.vi</code> with immediate 0 is not useful as it is always
-false). Similarly, <code>vsge{u}.vi</code> is not provided and the comparison is
-implemented using <code>vsgt{u}.vi</code> with the immediate decremented by one.
-The resulting effective <code>vsge.vi</code> range is -15 to 16, and the
-resulting effective <code>vsgeu.vi</code> range is 1 to 16 (Note, <code>vsgeu.vi</code> with
+The immediate forms of <code>vmslt{u}.vi</code> are not provided as the
+immediate value can be decreased by 1 and the <code>vmsle{u}.vi</code> variants
+used instead.  The <code>vmsle.vi</code> range is -16 to 15, resulting in an
+effective <code>vmslt.vi</code> range of -15 to 16.  The <code>vmsleu.vi</code> range is 0 to
+15 (and <code>(~0)-15</code> to <code>~0</code>), giving an effective <code>vmsltu.vi</code> range of 1 to 16
+(Note, <code>vmsltu.vi</code> with immediate 0 is not useful as it is always
+false). Similarly, <code>vmsge{u}.vi</code> is not provided and the comparison is
+implemented using <code>vmsgt{u}.vi</code> with the immediate decremented by one.
+The resulting effective <code>vmsge.vi</code> range is -15 to 16, and the
+resulting effective <code>vmsgeu.vi</code> range is 1 to 16 (Note, <code>vmsgeu.vi</code> with
 immediate 0 is not useful as it is always true).
 </td>
 </tr>
@@ -4689,7 +4817,7 @@ immediate 0 is not useful as it is always true).
 <div class="title">Note</div>
 </td>
 <td class="content">
-The <code>vsgt</code> forms for register scalar and immediates are provided
+The <code>vmsgt</code> forms for register scalar and immediates are provided
 to allow a single comparison instruction to provide the correct
 polarity of mask value without using additional mask logical
 instructions.
@@ -4698,7 +4826,7 @@ instructions.
 </table>
 </div>
 <div class="paragraph">
-<p>To reduce encoding space, the <code>vsge{u}.vx</code> form is not directly
+<p>To reduce encoding space, the <code>vmsge{u}.vx</code> form is not directly
 provided, and so the <code>va &#8805; x</code> case requires special treatment.</p>
 </div>
 <div class="admonitionblock note">
@@ -4708,8 +4836,8 @@ provided, and so the <code>va &#8805; x</code> case requires special treatment.<
 <div class="title">Note</div>
 </td>
 <td class="content">
-The <code>vsge{u}.vx</code> could potentially be encoded in a
-non-orthogonal way under the unused OPIVI variant of <code>vslt{u}</code>.  These
+The <code>vmsge{u}.vx</code> could potentially be encoded in a
+non-orthogonal way under the unused OPIVI variant of <code>vmslt{u}</code>.  These
 would be the only instructions in OPIVI that use a scalar `x`register
 however.  Alternatively, a further two funct6 encodings could be used,
 but these would have a different operand format (writes to mask
@@ -4721,17 +4849,17 @@ needed as described below.
 </table>
 </div>
 <div class="paragraph">
-<p>The <code>vsge{u}.vx</code> operation can be synthesized by reducing the
-value of <code>x</code> by 1 and using the <code>vsgt{u}.vx</code> instruction, when it is
+<p>The <code>vmsge{u}.vx</code> operation can be synthesized by reducing the
+value of <code>x</code> by 1 and using the <code>vmsgt{u}.vx</code> instruction, when it is
 known that this will not underflow the representation in <code>x</code>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>Sequences to synthesize `vsge{u}.vx` instruction
+<pre>Sequences to synthesize `vmsge{u}.vx` instruction
 
 va &gt;= x,  x &gt; minimum
 
-   addi t0, x, -1; vsgt{u}.vx vd, va, t0, vm</pre>
+   addi t0, x, -1; vmsgt{u}.vx vd, va, t0, vm</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -4743,18 +4871,18 @@ range of <code>x</code> is unknown.</p>
 <div class="content">
 <pre>unmasked va &gt;= x
 
-  pseudoinstruction: vsge{u}.vx vd, va, x
-  expansion: vslt{u}.vx vd, va, x; vmnand.mm vd, vd, vd
+  pseudoinstruction: vmsge{u}.vx vd, va, x
+  expansion: vmslt{u}.vx vd, va, x; vmnand.mm vd, vd, vd
 
 masked va &gt;= x, vd != v0
 
-  pseudoinstruction: vsge{u}.vx vd, va, x, v0.t
-  expansion: vslt{u}.vx vd, va, x, v0.t; vmxor.mm vd, vd, v0
+  pseudoinstruction: vmsge{u}.vx vd, va, x, v0.t
+  expansion: vmslt{u}.vx vd, va, x, v0.t; vmxor.mm vd, vd, v0
 
 masked va &gt;= x, any vd
 
-  pseudoinstruction: vsge{u}.vx vd, va, x, v0.t, vt
-  expansion: vslt{u}.vx vt, va, x;  vmandnot.mm vd, vd, vt
+  pseudoinstruction: vmsge{u}.vx vd, va, x, v0.t, vt
+  expansion: vmslt{u}.vx vt, va, x;  vmandnot.mm vd, vd, vt
 
   The vt argument to the pseudoinstruction must name a temporary vector register that is
   not same as vd and which will be clobbered by the pseudoinstruction</pre>
@@ -4766,8 +4894,8 @@ masked va &gt;= x, any vd
 <div class="listingblock">
 <div class="content">
 <pre>    # (a &lt; b) &amp;&amp; (b &lt; c) in two instructions
-    vslt.vv    v0, va, vb        # All body elements written
-    vslt.vv    v0, vb, vc, v0.t  # Only update at set mask</pre>
+    vmslt.vv    v0, va, vb        # All body elements written
+    vmslt.vv    v0, vb, vc, v0.t  # Only update at set mask</pre>
 </div>
 </div>
 </div>
@@ -4854,111 +4982,7 @@ product.  There is no possibility of overflow in this case.
 </div>
 </div>
 <div class="sect2">
-<h3 id="_vector_widening_integer_multiply_instructions">12.10. Vector Widening Integer Multiply Instructions</h3>
-<div class="paragraph">
-<p>The widening integer multiply instructions return the full 2*SEW-bit
-product from an SEW-bit*SEW-bit multiply.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre># Widening signed-integer multiply
-vwmul.vv  vd, vs2, vs1, vm# vector-vector
-vwmul.vx  vd, vs2, rs1, vm # vector-scalar
-
-# Widening unsigned-integer multiply
-vwmulu.vv vd, vs2, vs1, vm # vector-vector
-vwmulu.vx vd, vs2, rs1, vm # vector-scalar
-
-# Widening signed-unsigned integer multiply
-vwmulsu.vv vd, vs2, vs1, vm # vector-vector
-vwmulsu.vx vd, vs2, rs1, vm # vector-scalar</pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_vector_single_width_integer_multiply_add_instructions">12.11. Vector Single-Width Integer Multiply-Add Instructions</h3>
-<div class="paragraph">
-<p>The integer multiply-add instructions are destructive and are provided
-in two forms, one that overwrites the addend or minuend
-(<code>vmacc</code>,<code>vmsac</code>) and one that overwrites the first multiplicand
-(<code>vmadd</code>,<code>vmsub</code>).</p>
-</div>
-<div class="paragraph">
-<p>The low half of the product is added or subtracted from the third operand.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-"sac" is intended to be read as "subtract from accumulator".
-</td>
-</tr>
-</table>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre># Integer multiply-add, overwrite addend
-vmacc.vv vd, vs1, vs2, vm    # vd[i] = +(vs1[i] * vs2[i]) + vd[i]
-vmacc.vx vd, rs1, vs2, vm    # vd[i] = +(x[rs1] * vs2[i]) + vd[i]
-
-# Integer multiply-sub, overwrite minuend
-vmsac.vv vd, vs1, vs2, vm    # vd[i] = -(vs1[i] * vs2[i]) + vd[i]
-vmsac.vx vd, rs1, vs2, vm    # vd[i] = -(x[rs1] * vs2[i]) + vd[i]
-
-# Integer multiply-add, overwrite multiplicand
-vmadd.vv vd, vs1, vs2, vm    # vd[i] = (vd[i] * vs1[i]) + vs2[i]
-vmadd.vx vd, rs1, vs2, vm    # vd[i] = (vd[i] * x[rs1]) + vs2[i]
-
-# Integer multiply-sub, overwrite multiplicand
-vmsub.vv vd, vs1, vs2, vm    # vd[i] = (vd[i] * vs1[i]) - vs2[i]
-vmsub.vx vd, rs1, vs2, vm    # vd[i] = (vd[i] * x[rs1]) - vs2[i]</pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_vector_widening_integer_multiply_add_instructions">12.12. Vector Widening Integer Multiply-Add Instructions</h3>
-<div class="paragraph">
-<p>The widening integer multiply-add instructions add (subtract) a
-SEW-bit*SEW-bit multiply result to (from) a 2*SEW-bit value and
-produce a 2*SEW-bit result.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre># Widening unsigned-integer multiply-add, overwrite addend
-vwmaccu.vv vd, vs1, vs2, vm    # vd[i] = +(vs1[i] * vs2[i]) + vd[i]
-vwmaccu.vx vd, rs1, vs2, vm    # vd[i] = +(x[rs1] * vs2[i]) + vd[i]
-
-# Widening signed-integer multiply-add, overwrite addend
-vwmacc.vv vd, vs1, vs2, vm    # vd[i] = +(vs1[i] * vs2[i]) + vd[i]
-vwmacc.vx vd, rs1, vs2, vm    # vd[i] = +(x[rs1] * vs2[i]) + vd[i]
-
-# Widening unsigned-integer multiply-sub, overwrite minuend
-vwmsacu.vv vd, vs1, vs2, vm    # vd[i] = -(vs1[i] * vs2[i]) + vd[i]
-vwmsacu.vx vd, rs1, vs2, vm    # vd[i] = -(x[rs1] * vs2[i]) + vd[i]
-
-# Widening signed-integer multiply-sub, overwrite minuend
-vwmsac.vv vd, vs1, vs2, vm    # vd[i] = -(vs1[i] * vs2[i]) + vd[i]
-vwmsac.vx vd, rs1, vs2, vm    # vd[i] = -(x[rs1] * vs2[i]) + vd[i]</pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-There is no signed-unsigned widening multiply-add instruction.
-</td>
-</tr>
-</table>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_vector_integer_divide_instructions">12.13. Vector Integer Divide Instructions</h3>
+<h3 id="_vector_integer_divide_instructions">12.10. Vector Integer Divide Instructions</h3>
 <div class="paragraph">
 <p>The divide and remainder instructions are equivalent to the RISC-V
 standard scalar integer multiply/divides, with the same results for
@@ -5014,7 +5038,111 @@ operation.
 </div>
 </div>
 <div class="sect2">
-<h3 id="_vector_integer_merge_instruction">12.14. Vector Integer Merge Instruction</h3>
+<h3 id="_vector_widening_integer_multiply_instructions">12.11. Vector Widening Integer Multiply Instructions</h3>
+<div class="paragraph">
+<p>The widening integer multiply instructions return the full 2*SEW-bit
+product from an SEW-bit*SEW-bit multiply.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># Widening signed-integer multiply
+vwmul.vv  vd, vs2, vs1, vm# vector-vector
+vwmul.vx  vd, vs2, rs1, vm # vector-scalar
+
+# Widening unsigned-integer multiply
+vwmulu.vv vd, vs2, vs1, vm # vector-vector
+vwmulu.vx vd, vs2, rs1, vm # vector-scalar
+
+# Widening signed-unsigned integer multiply
+vwmulsu.vv vd, vs2, vs1, vm # vector-vector
+vwmulsu.vx vd, vs2, rs1, vm # vector-scalar</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vector_single_width_integer_multiply_add_instructions">12.12. Vector Single-Width Integer Multiply-Add Instructions</h3>
+<div class="paragraph">
+<p>The integer multiply-add instructions are destructive and are provided
+in two forms, one that overwrites the addend or minuend
+(<code>vmacc</code>,<code>vmsac</code>) and one that overwrites the first multiplicand
+(<code>vmadd</code>,<code>vmsub</code>).</p>
+</div>
+<div class="paragraph">
+<p>The low half of the product is added or subtracted from the third operand.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+"sac" is intended to be read as "subtract from accumulator".
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># Integer multiply-add, overwrite addend
+vmacc.vv vd, vs1, vs2, vm    # vd[i] = +(vs1[i] * vs2[i]) + vd[i]
+vmacc.vx vd, rs1, vs2, vm    # vd[i] = +(x[rs1] * vs2[i]) + vd[i]
+
+# Integer multiply-sub, overwrite minuend
+vmsac.vv vd, vs1, vs2, vm    # vd[i] = -(vs1[i] * vs2[i]) + vd[i]
+vmsac.vx vd, rs1, vs2, vm    # vd[i] = -(x[rs1] * vs2[i]) + vd[i]
+
+# Integer multiply-add, overwrite multiplicand
+vmadd.vv vd, vs1, vs2, vm    # vd[i] = (vd[i] * vs1[i]) + vs2[i]
+vmadd.vx vd, rs1, vs2, vm    # vd[i] = (vd[i] * x[rs1]) + vs2[i]
+
+# Integer multiply-sub, overwrite multiplicand
+vmsub.vv vd, vs1, vs2, vm    # vd[i] = (vd[i] * vs1[i]) - vs2[i]
+vmsub.vx vd, rs1, vs2, vm    # vd[i] = (vd[i] * x[rs1]) - vs2[i]</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vector_widening_integer_multiply_add_instructions">12.13. Vector Widening Integer Multiply-Add Instructions</h3>
+<div class="paragraph">
+<p>The widening integer multiply-add instructions add (subtract) a
+SEW-bit*SEW-bit multiply result to (from) a 2*SEW-bit value and
+produce a 2*SEW-bit result.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># Widening unsigned-integer multiply-add, overwrite addend
+vwmaccu.vv vd, vs1, vs2, vm    # vd[i] = +(vs1[i] * vs2[i]) + vd[i]
+vwmaccu.vx vd, rs1, vs2, vm    # vd[i] = +(x[rs1] * vs2[i]) + vd[i]
+
+# Widening signed-integer multiply-add, overwrite addend
+vwmacc.vv vd, vs1, vs2, vm    # vd[i] = +(vs1[i] * vs2[i]) + vd[i]
+vwmacc.vx vd, rs1, vs2, vm    # vd[i] = +(x[rs1] * vs2[i]) + vd[i]
+
+# Widening unsigned-integer multiply-sub, overwrite minuend
+vwmsacu.vv vd, vs1, vs2, vm    # vd[i] = -(vs1[i] * vs2[i]) + vd[i]
+vwmsacu.vx vd, rs1, vs2, vm    # vd[i] = -(x[rs1] * vs2[i]) + vd[i]
+
+# Widening signed-integer multiply-sub, overwrite minuend
+vwmsac.vv vd, vs1, vs2, vm    # vd[i] = -(vs1[i] * vs2[i]) + vd[i]
+vwmsac.vx vd, rs1, vs2, vm    # vd[i] = -(x[rs1] * vs2[i]) + vd[i]</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+There is no signed-unsigned widening multiply-add instruction.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vector_integer_merge_and_move_instructions">12.14. Vector Integer Merge and Move Instructions</h3>
 <div class="paragraph">
 <p>The vector integer merge instruction combines two source operands
 based on the mask field.  Unlike regular arithmetic instructions, the
@@ -5034,9 +5162,9 @@ immediate.</p>
 <div class="listingblock">
 <div class="content">
 <pre># Masked  operations, where vm=0
-vmerge.vv vd, vs2, vs1, v0.t  # vd[i] = v0[i].LSB ? vs1[i] : vs2[i]
-vmerge.vx vd, vs2, rs1, v0.t  # vd[i] = v0[i].LSB ? x[rs1] : vs2[i]
-vmerge.vi vd, vs2, imm, v0.t  # vd[i] = v0[i].LSB ? imm    : vs2[i]</pre>
+vmerge.vvm vd, vs2, vs1, v0  # vd[i] = v0[i].LSB ? vs1[i] : vs2[i]
+vmerge.vxm vd, vs2, rs1, v0  # vd[i] = v0[i].LSB ? x[rs1] : vs2[i]
+vmerge.vim vd, vs2, imm, v0  # vd[i] = v0[i].LSB ? imm    : vs2[i]</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -5062,26 +5190,10 @@ vector register file accesses from the first vector operand.
 <div class="listingblock">
 <div class="content">
 <pre># Unmasked  operations, where vm=1
-vmerge.vv vd, v0, vs1  # vd[i] = vs1[i], pseudoinstruction vmv.v.v vd, vs1
-vmerge.vx vd, v0, rs1  # vd[i] = x[rs1], pseudoinstruction vmv.v.x vd, rs1
-vmerge.vi vd, v0, imm  # vd[i] = imm,    pseudoinstruction vmv.v.i vd, imm</pre>
+vmv.v.v vd, v0, vs1 # vd[i] = vs1[i]
+vmv.v.x vd, v0, rs1 # vd[i] = rs1
+vmv.v.i vd, v0, imm # vd[i] = imm</pre>
 </div>
-</div>
-<div class="paragraph">
-<p>An unmasked <code>vmerge.vv</code> instruction can be used to copy one vector
-register group to another.  This is given a vector pseudoinstruction
-<code>vmv.v.v vdest, vsrc</code> (which expands to <code>vmerge.vv vdest, v0, vsrc</code>).</p>
-</div>
-<div class="paragraph">
-<p>An unmasked <code>vmerge.vx</code> instruction can be used to <em>splat</em> a scalar
-<code>x</code> register value into all active elements of a vector. This is given
-a vector pseudoinstruction <code>vmv.v.x vd, rs1</code>, which expands to <code>vmerge.vx
-vd, v0, rs1</code>.</p>
-</div>
-<div class="paragraph">
-<p>An unmasked <code>vmerge.vi</code> instruction can be used to initialize a vector
-register group with an immediate value.  This is given a vector
-pseudoinstruction <code>vmv.v.i vd, imm</code>.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -5091,7 +5203,7 @@ pseudoinstruction <code>vmv.v.i vd, imm</code>.</p>
 </td>
 <td class="content">
 Mask values can be widened into SEW-width elements using a
-sequence <code>vmv.v.i vd, 0; vmerge.vi vd, vd, 1, v0.t</code>.
+sequence <code>vmv.v.i vd, 0; vmerge.vim vd, vd, 1, v0</code>.
 </td>
 </tr>
 </table>
@@ -5355,6 +5467,11 @@ amounts up to 31 only and is effectively zero-extended for SEW of &gt;
 narrower destination.  The instructions support rounding, scaling, and
 saturation into the final destination format.</p>
 </div>
+<div class="paragraph">
+<p>The second argument (vector element, scalar value, immediate value)
+gives the amount to right shift the source as in the narrowing shift
+instructions, which provides the scaling.</p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre> # Narrowing unsigned clip
@@ -5466,7 +5583,8 @@ elements do not set FP exception flags.</p>
 
     # Floating-point subtract
     vfsub.vv vd, vs2, vs1, vm   # Vector-vector
-    vfsub.vf vd, vs2, rs1, vm   # vector-scalar</pre>
+    vfsub.vf vd, vs2, rs1, vm   # Vector-scalar vd[i] = vs2[i] - f[rs1]
+    vfrsub.vf vd, vs2, rs1, vm  # Scalar-vector vd[i] = f[rs1] - vs2[i]</pre>
 </div>
 </div>
 </div>
@@ -5660,46 +5778,49 @@ elements as described in Section <a href="#sec-mask-register-layout">Mask Regist
 </div>
 <div class="paragraph">
 <p>The compare instructions follow the semantics of the scalar
-floating-point compare instructions.</p>
+floating-point compare instructions.  <code>vmfeq</code> and <code>vmfne</code> raise the invalid
+operation exception only on signaling NaN inputs.  <code>vmflt</code>, <code>vmfle</code>, <code>vmfgt</code>,
+and <code>vmfge</code> raise the invalid operation exception on both signaling and
+quiet NaN inputs.</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre>    # Compare equal
-    vfeq.vv vd, vs2, vs1, vm   # Vector-vector
-    vfeq.vf vd, vs2, rs1, vm   # vector-scalar
+    vmfeq.vv vd, vs2, vs1, vm  # Vector-vector
+    vmfeq.vf vd, vs2, rs1, vm  # vector-scalar
 
     # Compare not equal
-    vfne.vv vd, vs2, vs1, vm   # Vector-vector
-    vfne.vf vd, vs2, rs1, vm   # vector-scalar
+    vmfne.vv vd, vs2, vs1, vm  # Vector-vector
+    vmfne.vf vd, vs2, rs1, vm  # vector-scalar
 
     # Compare less than
-    vflt.vv vd, vs2, vs1, vm   # Vector-vector
-    vflt.vf vd, vs2, rs1, vm   # vector-scalar
+    vmflt.vv vd, vs2, vs1, vm  # Vector-vector
+    vmflt.vf vd, vs2, rs1, vm  # vector-scalar
 
     # Compare less than or equal
-    vfle.vv vd, vs2, vs1, vm   # Vector-vector
-    vfle.vf vd, vs2, rs1, vm   # vector-scalar
+    vmfle.vv vd, vs2, vs1, vm  # Vector-vector
+    vmfle.vf vd, vs2, rs1, vm  # vector-scalar
 
     # Compare greater than
-    vfgt.vf vd, vs2, rs1, vm   # vector-scalar
+    vmfgt.vf vd, vs2, rs1, vm  # vector-scalar
 
     # Compare greater than or equal
-    vfge.vf vd, vs2, rs1, vm   # vector-scalar</pre>
+    vmfge.vf vd, vs2, rs1, vm  # vector-scalar</pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre>Comparison      Assembler Mapping             Assembler pseudoinstruction
 
-va &lt; vb         vflt.vv vd, va, vb, vm
-va &lt;= vb        vfle.vv vd, va, vb, vm
-va &gt; vb         vflt.vv vd, vb, va, vm     vfgt.vv vd, va, vb, vm
-va &gt;= vb        vfle.vv vd, vb, va, vm    vfge.vv vd, va, vb, vm
+va &lt; vb         vmflt.vv vd, va, vb, vm
+va &lt;= vb        vmfle.vv vd, va, vb, vm
+va &gt; vb         vmflt.vv vd, vb, va, vm    vmfgt.vv vd, va, vb, vm
+va &gt;= vb        vmfle.vv vd, vb, va, vm    vmfge.vv vd, va, vb, vm
 
-va &lt; f          vflt.vf vd, va, f, vm
-va &lt;= f         vfle.vf vd, va, f, vm
-va &gt; f          vfgt.vf vd, va, f, vm
-va &gt;= f         vfge.vf vd, va, f, vm
+va &lt; f          vmflt.vf vd, va, f, vm
+va &lt;= f         vmfle.vf vd, va, f, vm
+va &gt; f          vmfgt.vf vd, va, f, vm
+va &gt;= f         vmfge.vf vd, va, f, vm
 
 va, vb vector register groups
 f      scalar floating-point register</pre>
@@ -5720,34 +5841,23 @@ comparisons for NaNs.
 </div>
 <div class="paragraph">
 <p>To help implement the C99 floating-point comparison functions, a
-<code>vford</code> instruction is added that sets a mask register if the
-arguments are ordered (i.e., neither argument is NaN).</p>
+<code>vmford</code> instruction is added that sets a mask register if the
+arguments are ordered (i.e., neither argument is NaN).
+<code>vmford</code> raises the invalid operation exception on signaling NaNs only.</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre>    # Are args ordered?
-    vford.vv  vd, vs2, vs1, vm   # Vector-vector
-    vford.vf  vd, vs2, rs1, vm   # Vector-scalar</pre>
+    vmford.vv  vd, vs2, vs1, vm   # Vector-vector
+    vmford.vf  vd, vs2, rs1, vm   # Vector-scalar</pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre>    # Example of implementing isgreater()
-    vford.vv v0, va, vb       # Only set where args are ordered,
-    vfgt.vv v0, va, vb, v0.t   # so only set flags on ordered values.</pre>
+    vmford.vv v0, va, vb       # Only set where args are ordered,
+    vmfgt.vv v0, va, vb, v0.t  # so only set flags on ordered values.</pre>
 </div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-Detailed NaN signaling conventions to be added.
-</td>
-</tr>
-</table>
 </div>
 </div>
 <div class="sect2">
@@ -5783,7 +5893,7 @@ register value is copied to the destination element.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>vfmerge.vf vd, vs2, rs1, v0.t  # vd[i] = v0[i].LSB ? f[rs1] : vs2[i]</pre>
+<pre>vfmerge.vfm vd, vs2, rs1, v0  # vd[i] = v0[i].LSB ? f[rs1] : vs2[i]</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -5794,12 +5904,8 @@ reserved.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>vfmerge.vf vd, v0, rs1  # vd[i] = f[rs1];</pre>
+<pre>vfmv.v.f vd, rs1  # vd[i] = f[rs1];</pre>
 </div>
-</div>
-<div class="paragraph">
-<p>This is given a vector pseudoinstruction <code>vmv.v.f vd, rs1</code> which
-expands to <code>vfmerge.vf vd, v0, rs1</code>.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -6528,7 +6634,7 @@ loop:
     vsetvli x0, x0, e8   # Max length vectors of bytes
     vlbuff.v v1, (a1)       # Get src bytes
       csrr t1, vl           # Get number of bytes fetched
-    vseq.vi v0, v1, 0       # Flag zero bytes
+    vmseq.vi v0, v1, 0      # Flag zero bytes
     vmfirst.m a3, v0        # Zero found?
       add a1, a1, t1        # Bump pointer
     vmsif.m v0, v0          # Set mask up to and including zero byte.
@@ -6544,7 +6650,7 @@ strncpy:
 loop:
     vsetvli x0, a2, e8   # Vectors of bytes.
     vlbuff.v v1, (a1)       # Get src bytes
-    vseq.vi v0, v1, 0       # Flag zero bytes
+    vmseq.vi v0, v1, 0      # Flag zero bytes
     vmfirst.m a4, v0        # Zero found?
     vmsif.m v0, v0          # Set mask up to and including zero byte.
     vsb.v v1, (a3), v0.t    # Write out bytes
@@ -6563,7 +6669,7 @@ exit:
 <div class="sect2">
 <h3 id="_vector_iota_instruction">16.8. Vector Iota Instruction</h3>
 <div class="paragraph">
-<p>The <code>vmiota.m</code> instruction reads a source vector mask register and
+<p>The <code>viota.m</code> instruction reads a source vector mask register and
 writes to each element of the destination vector register group the
 sum of all the least-significant bits of elements in the mask register
 whose index is less than the element, e.g., a parallel prefix sum of
@@ -6576,20 +6682,20 @@ written.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre> vmiota.m vd, vs2, vm
+<pre> viota.m vd, vs2, vm
 
  # Example
 
      7 6 5 4 3 2 1 0   Element number
 
      1 0 0 1 0 0 0 1   v2 contents
-                       vmiota.m v4, v2 # Unmasked
+                       viota.m v4, v2 # Unmasked
      2 2 2 1 1 1 1 0   v4 result
 
      1 1 1 0 1 0 1 1   v0 contents
      1 0 0 1 0 0 0 1   v2 contents
      2 3 4 5 6 7 8 9   v4 contents
-                       vmiota.m v4, v2, v0.t # Masked
+                       viota.m v4, v2, v0.t # Masked
      1 1 1 5 1 7 1 0   v4 results</pre>
 </div>
 </div>
@@ -6599,7 +6705,7 @@ SEW is wider than the result.  If the result value would overflow the
 destination SEW, the least-significant SEW bits are retained.</p>
 </div>
 <div class="paragraph">
-<p>Traps on <code>vmiota.m</code> are always reported with a <code>vstart</code> of 0, and
+<p>Traps on <code>viota.m</code> are always reported with a <code>vstart</code> of 0, and
 execution is always restarted from the beginning when resuming after a
 trap handler.  An illegal instruction exception is raised if <code>vstart</code>
 is non-zero.</p>
@@ -6626,7 +6732,7 @@ execution after a trap simpler.
 </table>
 </div>
 <div class="paragraph">
-<p>The <code>vmiota.m</code> instruction can be combined with memory scatter
+<p>The <code>viota.m</code> instruction can be combined with memory scatter
 instructions (indexed stores) to perform vector compress functions.</p>
 </div>
 <div class="listingblock">
@@ -6660,14 +6766,14 @@ loop:
     vlw.v v8, (a1)                # Load input vector
       sub a0, a0, a5              # Decrement number done
       slli a5, a5, 2              # Multiply by four bytes
-    vsne.vi v0, v8, 0             # Locate non-zero values
+    vmsne.vi v0, v8, 0            # Locate non-zero values
       add a1, a1, a5              # Bump input pointer
     vmpopc.m a5, v0               # Count number of elements set in v0
-    vmiota.m v16, v0              # Get destination offsets of active elements
+    viota.m v16, v0              # Get destination offsets of active elements
       add a6, a6, a5              # Accumulate number of elements
     vsll.vi v16, v16, 2, v0.t     # Multiply offsets by four bytes
       slli a5, a5, 2              # Multiply number of non-zero elements by four bytes
-    vsuxw.v v8, (a2), v16, v0.t   # Scatter using scaled vmiota results under mask
+    vsuxw.v v8, (a2), v16, v0.t   # Scatter using scaled viota results under mask
       add a2, a2, a5              # Bump output pointer
       bnez a0, loop               # Any more?
 
@@ -6689,6 +6795,10 @@ destination vector register group, from 0 to <code>vl</code>-1.</p>
 </div>
 <div class="paragraph">
 <p>The instruction can be masked.</p>
+</div>
+<div class="paragraph">
+<p>The <code>vs2</code> field of the instruction must be set to <code>v0</code>, otherwise the
+encoding is <em>reserved</em>.</p>
 </div>
 <div class="paragraph">
 <p>The result value is zero-extended to fill the destination element if
@@ -6720,7 +6830,7 @@ implementations without register renaming, and to support restart.
 </td>
 <td class="content">
 Microarchitectures can implement <code>vid.v</code> instruction using the
-same datapath as <code>vmiota.m</code> but with an implicit set mask source.
+same datapath as <code>viota.m</code> but with an implicit set mask source.
 </td>
 </tr>
 </table>
@@ -6756,6 +6866,10 @@ index, treated as an unsigned integer.  If the index is out of range
 value.  If SEW &gt; XLEN, the least-significant bits are copied to the
 destination and the upper SEW-XLEN bits are ignored.  If SEW &lt; XLEN,
 the value is zero-extended to XLEN.</p>
+</div>
+<div class="paragraph">
+<p>The encodings corresponding to the masked version (vm=0) of <code>vext.x.v</code>
+are reserved.</p>
 </div>
 <div class="paragraph">
 <p>An assembler pseudoinstruction <code>vmv.x.s rd, vs2</code> expanding to
@@ -6816,6 +6930,13 @@ VLEN/SEW) are zeroed.</p>
 <div class="paragraph">
 <p>If <code>vstart</code> &#8805; <code>vl</code>, no operation is performed and the destination
 register is not updated.</p>
+</div>
+<div class="paragraph">
+<p>The <code>vs2</code> field must be <code>v0</code>, other values of <code>vs2</code> are reserved.</p>
+</div>
+<div class="paragraph">
+<p>The encodings corresponding to the masked version (vm=0) of <code>vmv.s.x</code>
+are reserved.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -6892,6 +7013,10 @@ destination vector register group, regardless of <code>vstart</code>.
 </td>
 </tr>
 </table>
+</div>
+<div class="paragraph">
+<p>The encodings corresponding to the masked versions (vm=0) of <code>vfmv.f.s</code>
+and <code>vfmv.s.f</code> are reserved.</p>
 </div>
 </div>
 <div class="sect2">
@@ -7177,8 +7302,8 @@ These forms allow any vector element to be "splatted" to an entire vector.
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>vrgather.vx vd, vs2, rs1, vm # vd[i] = vs2[rs1]
-vrgather.vi vd, vs2, imm, vm # vd[i] = vs2[imm]</pre>
+<pre>vrgather.vx vd, vs2, rs1, vm # vd[i] = (x[rs1] &gt;= VLMAX) ? 0 : vs2[rs1]
+vrgather.vi vd, vs2, imm, vm # vd[i] = (imm &gt;= VLMAX) ? 0 : vs2[imm]</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -7186,6 +7311,18 @@ vrgather.vi vd, vs2, imm, vm # vd[i] = vs2[imm]</pre>
 cannot overlap with the source vector register groups, including the
 mask register if the operation is masked, otherwise an illegal
 instruction exception is raised.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+When SEW=8, only vector elements 0-255 can be referenced.
+</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect2">
@@ -7754,7 +7891,7 @@ continue to operate on vector registers containing element masks.</p>
 </div>
 <div class="paragraph">
 <p>Vector mask population count (<code>vmpopc</code>), find-first and related
-instructions (<code>vmfirst</code>, <code>vmsbf</code>, <code>vmsif</code>, <code>vmsof</code>), iota (<code>vmiota</code>),
+instructions (<code>vmfirst</code>, <code>vmsbf</code>, <code>vmsif</code>, <code>vmsof</code>), iota (<code>viota</code>),
 and element index (<code>vid</code>) instructions are unaffected by EDIV.</p>
 </div>
 <div class="paragraph">
@@ -7788,21 +7925,37 @@ vsll.vx v1,v2,x1                     # Performs a vector of 4*vl 8-bit shifts.</
 </div>
 </div>
 <div class="sect3">
-<h4 id="_vector_reduction_instructions_under_ediv">19.2.2. Vector Reduction Instructions under EDIV</h4>
+<h4 id="_vector_add_with_carrysubtract_with_borrow_reserved_under_ediv1">19.2.2. Vector Add with Carry/Subtract with Borrow Reserved under EDIV&gt;1</h4>
 <div class="paragraph">
-<p>Vector reduction instructions now operate independently on all
-elements in a vector, reducing sub-element values within an element to
-an element-wide result.</p>
+<p>For EDIV &gt; 1, <code>vadc</code>, <code>vmadc</code>, <code>vsbc</code>, <code>vmsbc</code> are reserved.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_vector_reduction_instructions_under_ediv">19.2.3. Vector Reduction Instructions under EDIV</h4>
+<div class="paragraph">
+<p>Vector single-width integer sum reduction instructions are reserved
+under EDIV&gt;1.  Other vector single-width reductions and vector
+widening integer sum reduction instructions now operate independently
+on all elements in a vector, reducing sub-element values within an
+element to an element-wide result.</p>
+</div>
+<div class="paragraph">
+<p>The scalar input is taken from the least-significant bits of the
+second operand, with the number of bits equal to the number of
+significant result bits (i.e., for sum and dot reductions, the number
+of bits are given in table above, for non-sum and non-dot reductions,
+equal to the element size).</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre># Sum each sub-vector of four bytes into a 16-bit result.
 vsetvli t0, a0, e32,d4  # Vectors of 32-bit elements, divided into byte sub-elements
-vredsum.vs v1, v2, v3 # v1[i][15:0] = v2[i][31:24] + v2[i][23:16]
-                      #              + v2[i][15:8] + v2[i][7:0] + v3[i][31:0]
+vwredsum.vs v1, v2, v3 # v1[i][15:0] = v2[i][31:24] + v2[i][23:16]
+                       #              + v2[i][15:8] + v2[i][7:0] + v3[i][15:0]
 
-vredmax.vs v5, v6, v7 # v5[i][31:0] = max(v6[i][31:24], v6[i][23:16],
-                      #                    v6[i][15:8], v6[i][7:0], v7[i][31:0])</pre>
+# Find maximum among sub-elements
+vredmax.vs v5, v6, v7 # v5[i][7:0] = max(v6[i][31:24], v6[i][23:16],
+                      #                    v6[i][15:8], v6[i][7:0], v7[i][7:0])</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -7811,27 +7964,22 @@ max(8,SEW/EDIV) bits wide, sign- or zero-extended to full SEW if
 necessary.</p>
 </div>
 <div class="paragraph">
-<p>Integer sub-element sum reductions produce a final result that is
-max(8,min(SEW,2*SEW/EDIV)) bits wide, sign- or zero-extended to full
-SEW if necessary.</p>
+<p>Integer sub-element widening sum reductions produce a final result
+that is max(8,min(SEW,2*SEW/EDIV)) bits wide, sign- or zero-extended
+to full SEW if necessary.</p>
 </div>
 <div class="paragraph">
-<p>Floating-point sub-element non-sum reductions produce a final result
-that is SEW/EDIV bits wide.</p>
+<p>Single-width floating-point reductions produce a final result that is
+SEW/EDIV bits wide.</p>
 </div>
 <div class="paragraph">
-<p>Floating-point sub-element sum reductions produce a final result that
-is min(2*SEW/EDIV,FLEN) bits wide, NaN-boxed to the full SEW width if
+<p>Widening floating-point sum reductions produce a final result that is
+min(2*SEW/EDIV,FLEN) bits wide, NaN-boxed to the full SEW width if
 necessary.</p>
-</div>
-<div class="paragraph">
-<p>Widening vector reduction operations with non-zero EDIV are reserved.
-NOTE: While these could be defined, it is unclear they are needed and
-this reduces implementation complexity.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_vector_register_gather_instructions_under_ediv">19.2.3. Vector Register Gather Instructions under EDIV</h4>
+<h4 id="_vector_register_gather_instructions_under_ediv">19.2.4. Vector Register Gather Instructions under EDIV</h4>
 <div class="paragraph">
 <p>Vector register gather instructions under non-zero EDIV only gather
 sub-elements within the element.  The source and index values are
@@ -8352,10 +8500,10 @@ vfdot.vv v1, v2, v3
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">010001</p></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmadc</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">010001</p></td>
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"></td>
@@ -8382,10 +8530,10 @@ vfdot.vv v1, v2, v3
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">010011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmsbc</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">010011</p></td>
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"></td>
@@ -8445,7 +8593,7 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vmerge</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmerge/vmv</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">010111</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"></td>
@@ -8453,14 +8601,14 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">010111</p></td>
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vfmerge.vf</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfmerge.vf/vfmv</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">011000</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vseq</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmseq</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">011000</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"></td>
@@ -8468,14 +8616,14 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">011000</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vfeq</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmfeq</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">011001</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vsne</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmsne</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">011001</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"></td>
@@ -8483,14 +8631,14 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">011001</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vfle</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmfle</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">011010</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vsltu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmsltu</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">011010</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"></td>
@@ -8498,14 +8646,14 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">011010</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vford</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmford</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">011011</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vslt</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmslt</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">011011</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"></td>
@@ -8513,14 +8661,14 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">011011</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vflt</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmflt</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">011100</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vsleu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmsleu</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">011100</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"></td>
@@ -8528,14 +8676,14 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">011100</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vfne</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmfne</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">011101</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vsle</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmsle</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">011101</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"></td>
@@ -8543,14 +8691,14 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">011101</p></td>
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vfgt</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmfgt</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">011110</p></td>
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vsgtu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmsgtu</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">011110</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"></td>
@@ -8565,7 +8713,7 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vsgt</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmsgt</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">011111</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"></td>
@@ -8573,7 +8721,7 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">011111</p></td>
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vfge</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmfge</p></td>
 </tr>
 </tbody>
 </table>
@@ -8718,8 +8866,8 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">vmulh</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">100111</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfrsub</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">101000</p></td>
@@ -9248,7 +9396,7 @@ vfdot.vv v1, v2, v3
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">10000</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vmiota</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">viota</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">10001</p></td>
@@ -9304,7 +9452,7 @@ vvaddint32:
     vsetvli a4, a0, e8,m1  # Byte vector for predicate calc
     vlb.v v1, (a1)                # Load a[i]
       add a1, a1, a4              # Bump pointer.
-    vslt.vi v0, v1, 5             # a[i] &lt; 5?
+    vmslt.vi v0, v1, 5            # a[i] &lt; 5?
 
     vsetvli x0, a0, e32,m4 # Vector of 32-bit values.
       sub a0, a0, a4              # Decrement count
@@ -9352,7 +9500,7 @@ loop:
     vlb.v v0, (a1)          # Get x[i], sign-extended to 16b
       sub a0, a0, t0        # Decrement element count
       add a1, a1, t0        # x[i] Bump pointer
-    vslt.vi v0, v0, 5       # Set mask in v0
+    vmslt.vi v0, v0, 5      # Set mask in v0
       slli t0, t0, 1        # Multiply by 2 bytes
     vlh.v v1, (a2), v0.t    # z[i] = a[i] case
     vmnot.m v0, v0          # Invert v0
@@ -10545,6 +10693,7 @@ https://highlightjs.org/
 
       openSpan += classname + '">';
 
+      if (!classname) return insideSpan;
       return openSpan + insideSpan + closeSpan;
     }
 
@@ -11101,7 +11250,7 @@ module.exports = function(hljs) {
   ];
 
   return {
-    aliases: ['c', 'cc', 'h', 'c++', 'h++', 'hpp'],
+    aliases: ['c', 'cc', 'h', 'c++', 'h++', 'hpp', 'hh', 'hxx', 'cxx'],
     keywords: CPP_KEYWORDS,
     illegal: '</',
     contains: EXPRESSION_CONTAINS.concat([
