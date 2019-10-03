@@ -291,7 +291,7 @@ h2 {
 
 <div class="ftitle">
 <div class="ftitle1">RISC-V "V" Vector Extension</div>
-<div class="ftitle2">Version 0.7.2-draft-20190616</div>
+<div class="ftitle2">Version 0.8-draft-20190906</div>
 </div>
 
       <div id="content">
@@ -1039,7 +1039,7 @@ was adopted in 0.6 initially to avoid issues with the floating-point
 calling convention when floating-point values were overlaid on the
 vector registers, whereas earlier versions kept the vector register
 group names contiguous (LMUL=8 has groups <code>v0</code>, <code>v1</code>, <code>v2</code>, <code>v3</code>).  In
-v0.7, the floating-point registers are separate again.
+versions v0.7 onwards, the floating-point registers are separate again.
 </td>
 </tr>
 </table>
@@ -1089,7 +1089,7 @@ instruction variants.</p>
 <div class="paragraph">
 <p>The <code>vl</code> register holds an unsigned integer specifying the number of
 elements to be updated by a vector instruction.  Elements in any
-destination vector register group with indices &#8805; <code>vl</code> are zeroed during
+destination vector register group with indices &#8805; <code>vl</code> are unmodified during
 execution of a vector instruction.  When <code>vstart</code> &#8805; <code>vl</code>,
 no elements are updated in any destination vector register group.</p>
 </div>
@@ -1102,6 +1102,19 @@ no elements are updated in any destination vector register group.</p>
 <td class="content">
 As a consequence, when <code>vl</code>=0, no elements are updated in the
 destination vector register group, regardless of <code>vstart</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Instructions that write a scalar integer or floating-point register
+do so even when <code>vstart</code> &#8805; <code>vl</code>.
 </td>
 </tr>
 </table>
@@ -1157,8 +1170,7 @@ CSR to zero.
 </div>
 <div class="paragraph">
 <p>If the value in the <code>vstart</code> register is greater than or equal to the
-vector length <code>vl</code> then no element operations are performed, nor are the
-elements at the end of the destination vector past <code>vl</code> zeroed.  The
+vector length <code>vl</code> then no element operations are performed.  The
 <code>vstart</code> register is then reset to zero.</p>
 </div>
 <div class="paragraph">
@@ -1223,9 +1235,17 @@ also reflected as a field in the upper bits of <code>fcsr</code>.  Systems
 without floating-point must add <code>fcsr</code> when adding the vector
 extension.</p>
 </div>
+<div class="paragraph">
+<p>The fixed-point rounding algorithm is specified as follows.
+Suppose the pre-rounding result is <code>v</code>, and <code>d</code> bits of that result are to be
+rounded off.
+Then the rounded result is <code>(v &gt;&gt; d) + r</code>, where <code>r</code> depends on the rounding
+mode as specified in the following table.</p>
+</div>
 <table class="tableblock frame-all grid-all fit-content">
 <caption class="title">Table 5. vxrm encoding</caption>
 <colgroup>
+<col>
 <col>
 <col>
 <col>
@@ -1236,6 +1256,7 @@ extension.</p>
 <th class="tableblock halign-left valign-top" colspan="2">Bits [1:0]</th>
 <th class="tableblock halign-left valign-top">Abbreviation</th>
 <th class="tableblock halign-left valign-top">Rounding Mode</th>
+<th class="tableblock halign-left valign-top">Rounding increment, <code>r</code></th>
 </tr>
 </thead>
 <tbody>
@@ -1244,24 +1265,28 @@ extension.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">rnu</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">round-to-nearest-up (add +0.5 LSB)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>v[d-1]</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">rne</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">round-to-nearest-even</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>v[d-1] &amp; (v[d-2:0]&#8800;0 | v[d])</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">rdn</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">round-down (truncate)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>0</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">rod</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">round-to-odd (OR bits into LSB, aka "jam")</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>!v[d] &amp; v[d-1:0]&#8800;0</code></p></td>
 </tr>
 </tbody>
 </table>
@@ -1381,7 +1406,7 @@ remaining bits in <code>vtype</code> are zero, and <code>vl</code> is set to zer
 </td>
 <td class="content">
 Any use of the vector unit will require an initial <code>vsetvl{i}</code>,
-which will reset <code>vstart.  The `vxrm</code> and <code>vxsat</code> fields should be
+which will reset <code>vstart</code>.  The <code>vxrm</code> and <code>vxsat</code> fields should be
 reset explicitly in software before use.
 </td>
 </tr>
@@ -1667,9 +1692,9 @@ memory accesses into parallel accesses for the vector register file.
 <div class="title">Note</div>
 </td>
 <td class="content">
-The previous explicit configuration design allowed these
-tradeoffs to be managed at the microarchitectural level and optimized
-for each configuration.
+The previous explicit configuration design (version &lt; 0.6)
+allowed these tradeoffs to be managed at the microarchitectural level
+and optimized for each configuration.
 </td>
 </tr>
 </table>
@@ -1827,10 +1852,10 @@ the entire mask register.</p>
 MLEN*<em>i</em>] of the mask register.  When a mask element is written by a
 compare instruction, the low bit in the mask element is written with
 the compare result and the upper bits of the mask element are zeroed.
-When a value is read as a mask, only the least-significant bit of the
-mask element is used to control masking and the upper bits are
-ignored.  Mask elements past the end of the current vector length are
-zeroed.</p>
+Destination mask elements past the end of the current vector length
+are unchanged.  When a value is read as a mask, only the
+least-significant bit of the mask element is used to control masking
+and the upper bits are ignored.</p>
 </div>
 <div class="paragraph">
 <p>The pattern is such that for constant SEW/LMUL values, the effective
@@ -2233,8 +2258,8 @@ update any destination vector register.</p>
 <li>
 <p>The <em>tail</em> elements during a vector instruction&#8217;s execution are the
 elements past the current vector length setting.  The tail elements do
-not raise exceptions, but do zero the results in any destination
-vector register group.</p>
+not raise exceptions, and do not update any destination vector register
+group.</p>
 </li>
 <li>
 <p>In addition, another term, <em>body</em>, is used for the set of elements
@@ -2254,12 +2279,6 @@ the tail.</p>
     tail(x)     = (vl &lt;= x &lt; VLMAX)</pre>
 </div>
 </div>
-<div class="paragraph">
-<p>All regular vector instructions place zeros in the tail elements of
-the destination vector register group.  Some vector arithmetic
-instructions are not maskable, so have no inactive elements, but still
-zero the tail elements.</p>
-</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -2267,93 +2286,15 @@ zero the tail elements.</p>
 <div class="title">Note</div>
 </td>
 <td class="content">
-The inactive and tail update rules were designed to provide an
-efficient compromise between requirements of implementations with and
-without vector register ECC and/or renaming.
-</td>
-</tr>
-</table>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-Not zeroing past <code>vl</code> would penalize renamed implementations that
-would have to copy all elements past VL on every instruction
-execution, whereas it&#8217;s a small penalty for non-renamed
-implementations to implement the tail zeroing.  While a renamed
-machine could avoid copying for whole vector registers in a group by
-not renaming, operations on individual registers may be deep enough
-that requiring full occupancy for any vector length would be
-problematic.  Zeroing values past <code>vl</code> does not impact most software,
-except for a small cost in some reduction cases.
-</td>
-</tr>
-</table>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-For zeroing tail updates, implementations with temporally long
-vector registers, either with or without register renaming, will be
-motivated to add microarchitectural state to avoid actually writing
-zeros to all tail elements, but this is a relatively simple
-microarchitectural optimization.  For example, one bit per element
-group or a quantized VL can be used to track the extent of zeroing.
-An element group is the set of elements comprising the smallest atomic
-unit of execution in the microarchitecture (often equivalent to the
-width of the physical datapath in the machine).  The
-microarchitectural state for an element group indicates that zero
-should be returned for the element group on a read, and that zero
-should be substituted in for any masked-off elements in the group on
-the first write to that element group (after which the element group
-zero bit can be cleared).
-</td>
-</tr>
-</table>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-Providing merging predication instead of zeroing inactive
-elements on a masked operation reduces code path length for many code
-blocks, and reduces register pressure by allowing different code paths
-to use disjoint sets of elements in the same vector register.
-Implementations with vector register ECC or renaming will have to
-perform read-update-write on the destination register value to
-preserve inactive elements on arithmetic instructions, so would appear
-to need an extra vector register read port.  However, the arithmetic
-instructions are designed such that the largest read-port requirement
-is for fused multiply-add instructions that are destructive and
-overwrite one source, and hence do not need an extra read port to
-preserve inactive elements.  Given that linear algebra is one of the
-more important applications for vector units, and that fused
-multiply-add is the dominant operation in linear algebra routines,
-microarchitectures will be optimized for fused multiply-add operations
-and so should be able to preserve inactive elements on other
-arithmetic operations without large additional cost.  However, masked
-vector load instructions incur the cost of an additional read port on
-their destination register.  The need to support resumable vector
-loads with non-zero <code>vstart</code> values also drives the need to preserve
-vector load destination register values.  The AMOs have been defined
-to be destructive in their source operand to reduce the maximum read
-port requirement for the memory pipe. An option that was considered
-was to have loads behave differently from arithmetic instructions and
-to zero any masked-off elements. However, this would require
-additional instructions and increase register pressure, and vector
-loads must in any case still cope with non-zero <code>vstart</code> values
-through some mechanism.
+The inactive and tail update rules leave unchanged destination
+elements that are not participating in the vector operation.  Previous
+versions (v0.7) of the specification zeros the tail elements to reduce
+the complexity of implementations that implement register renaming. In
+version 0.8, this was changed to leave the tail elements undisturbed,
+which reduces complexity for simpler implementations without register
+renaming and reduces software overhead for some common sequences.  A
+rationale is provided in a separate document:
+<a href="https://github.com/riscv/riscv-v-spec/blob/master/v-undisturbed-versus-zeroing.adoc" class="bare">https://github.com/riscv/riscv-v-spec/blob/master/v-undisturbed-versus-zeroing.adoc</a>
 </td>
 </tr>
 </table>
@@ -2373,9 +2314,9 @@ values in <code>vl</code> and <code>vtype</code> to match application needs.</p>
 <div class="listingblock">
 <div class="content">
 <pre> vsetvli rd, rs1, vtypei # rd = new vl, rs1 = AVL, vtypei = new vtype setting
-                         # if rs1 = x0, then use maximum vector length
+                         # if rs1 = x0, then use current vector length
  vsetvl  rd, rs1, rs2    # rd = new vl, rs1 = AVL, rs2 = new vtype value
-                         # if rs1 = x0, then use maximum vector length</pre>
+                         # if rs1 = x0, then use current vector length</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -2471,8 +2412,8 @@ set to zero, and the <code>vl</code> register is also set to zero.</p>
 </div>
 <div class="paragraph">
 <p>The requested application vector length (AVL) is passed in <code>rs1</code> as an
-unsigned integer.  Using <code>x0</code> as the <code>rs1</code> register specifier, encodes
-an infinite AVL, and so requests the maximum possible vector length.</p>
+unsigned integer.  Using <code>x0</code> as the <code>rs1</code> register specifier requests
+an AVL equal to the current <code>vl</code>.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -2481,8 +2422,8 @@ an infinite AVL, and so requests the maximum possible vector length.</p>
 <div class="title">Note</div>
 </td>
 <td class="content">
-A <code>vsetvl{i}</code> with AVL=<code>x0</code> can be used to read current VLMAX,
-though this does overwrite <code>vl</code>.
+Executing <code>vsetvl{i}</code> with <code>rs1</code>=<code>x0</code> is guaranteed to keep the
+current <code>vl</code> intact if VLMAX is not reduced.
 </td>
 </tr>
 </table>
@@ -2496,7 +2437,35 @@ though this does overwrite <code>vl</code>.
 <td class="content">
 The behavior of <code>vsetvl{i}</code> does not depend on whether <code>rd</code>=<code>x0</code>.
 Setting <code>rd</code>=<code>x0</code> can be useful when the application already knows what value
-<code>vl</code> will assume, e.g., when changing SEW and LMUL with constant AVL.
+<code>vl</code> will assume, e.g., when changing SEW and LMUL by the same factor
+while keeping <code>vl</code> constant by setting <code>rs1</code>=<code>x0</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Software can set <code>vl</code> to VLMAX by requesting an AVL of -1.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Earlier drafts used <code>rs1</code>=<code>x0</code> to request an AVL of VLMAX.
+The current design supports efficient manipulation of SEW without
+knowing AVL or <code>vl</code>.  Requesting a <code>vl</code> of VLMAX requires just
+one additional instruction.
 </td>
 </tr>
 </table>
@@ -2531,7 +2500,7 @@ argument, then set <code>vl</code> obeying the following constraints:</p>
 <p><code>vl = AVL</code> if <code>AVL &#8804; VLMAX</code></p>
 </li>
 <li>
-<p><code>vl &#8805; ceil(AVL / 2)</code> if <code>AVL &lt; (2 * VLMAX)</code></p>
+<p><code>ceil(AVL / 2) &#8804; vl &#8804; VLMAX</code> if <code>AVL &lt; (2 * VLMAX)</code></p>
 </li>
 <li>
 <p><code>vl = VLMAX</code> if <code>AVL &#8805; (2 * VLMAX)</code></p>
@@ -3356,8 +3325,9 @@ number of elements processed without a trap.</p>
 
 strlen:
     mv a3, a0             # Save start
+    li t0, -1             # Infinite AVL
 loop:
-    vsetvli a1, x0, e8  # Vector of bytes of maximum length
+    vsetvli a1, t0, e8  # Vector of bytes of maximum length
     vlbff.v v1, (a3)      # Load bytes
     csrr a1, vl           # Get bytes read
     vmseq.vi v0, v1, 0    # Set v0[i] where v1[i] = 0
@@ -6305,11 +6275,13 @@ types not supported in the scalar unit.
 </table>
 </div>
 <div class="paragraph">
-<p>Inactive elements are excluded from the reduction.</p>
+<p>Inactive elements from the source vector register group are excluded
+from the reduction, but the scalar operand is always included
+regardless of mask.</p>
 </div>
 <div class="paragraph">
 <p>The other elements in the destination vector register ( 0 &lt; index &lt;
-VLEN/SEW) are zeroed.</p>
+VLEN/SEW) are left unchanged.</p>
 </div>
 <div class="paragraph">
 <p>If <code>vl</code>=0, no operation is performed and the destination register is
@@ -6539,7 +6511,7 @@ of <code>vlmul</code>.</p>
 <code>vstart</code> are unchanged, and <code>vstart</code> is reset to zero after execution.
 Vector mask logical instructions are always unmasked so there are no
 inactive elements.  Mask elements past <code>vl</code>, the tail elements, are
-zeroed.</p>
+unchanged.</p>
 </div>
 <div class="paragraph">
 <p>Within a mask element, these instructions perform their operations
@@ -6877,7 +6849,7 @@ there is no set bit in the source vector, then all active elements in
 the destination are written with a 1.</p>
 </div>
 <div class="paragraph">
-<p>The tail elements in the destination mask register are cleared.</p>
+<p>The tail elements in the destination mask register are unchanged.</p>
 </div>
 <div class="paragraph">
 <p>Traps on <code>vmsbf.m</code> are always reported with a <code>vstart</code> of 0.  The
@@ -6914,7 +6886,7 @@ set-before-first, except it also includes the element with a set bit.</p>
 </div>
 </div>
 <div class="paragraph">
-<p>The tail elements in the destination mask register are cleared.</p>
+<p>The tail elements in the destination mask register are unchanged.</p>
 </div>
 <div class="paragraph">
 <p>Traps on <code>vmsif.m</code> are always reported with a <code>vstart</code> of 0.  The
@@ -6952,7 +6924,7 @@ set, if any.</p>
 </div>
 </div>
 <div class="paragraph">
-<p>The tail elements in the destination mask register are cleared.</p>
+<p>The tail elements in the destination mask register are unchanged.</p>
 </div>
 <div class="paragraph">
 <p>Traps on <code>vmsof.m</code> are always reported with a <code>vstart</code> of 0.  The
@@ -6970,8 +6942,9 @@ set, if any.</p>
 <pre>  # char* strcpy(char *dst, const char* src)
 strcpy:
       mv a2, a0             # Copy dst
+      li t0, -1             # Infinite AVL
 loop:
-    vsetvli x0, x0, e8   # Max length vectors of bytes
+    vsetvli x0, t0, e8      # Max length vectors of bytes
     vlbuff.v v1, (a1)       # Get src bytes
       csrr t1, vl           # Get number of bytes fetched
     vmseq.vi v0, v1, 0      # Flag zero bytes
@@ -6994,14 +6967,26 @@ loop:
     vfirst.m a4, v0         # Zero found?
     vmsif.m v0, v0          # Set mask up to and including zero byte.
     vsb.v v1, (a3), v0.t    # Write out bytes
-      bgez a4, exit         # Done
       csrr t1, vl           # Get number of bytes fetched
-      add a1, a1, t1        # Bump pointer
       sub a2, a2, t1        # Decrement count.
+      bgez a4, zero_tail    # Zero remaining bytes.
+      add a1, a1, t1        # Bump pointer
       add a3, a3, t1        # Bump pointer
       bnez a2, loop         # Anymore?
 
-exit:
+      ret
+
+zero_tail:
+    vsetvli x0, a2, e8,m8   # Vectors of bytes.
+    vmv.v.i v0, 0           # Splat zero.
+
+zero_loop:
+    vsetvli t1, a2, e8,m8   # Vectors of bytes.
+    vsb.v v0, (a3)          # Store zero.
+      sub a2, a2, t1        # Decrement count.
+      add a3, a3, t1        # Bump pointer
+      bnez a2, zero_loop    # Anymore?
+
       ret</pre>
 </div>
 </div>
@@ -7198,14 +7183,14 @@ vmv.s.x vd, rs1  # vd[0] = rs1 (vs2=0)</pre>
 <p>The <code>vmv.x.s</code> instruction copies a single SEW-wide element from index 0 of the
 source vector register to a destination integer register.  If SEW &gt; XLEN, the
 least-significant XLEN bits are transferred and the upper SEW-XLEN bits are
-ignored.  If SEW &lt; XLEN, the value is zero-extended to XLEN bits.</p>
+ignored.  If SEW &lt; XLEN, the value is sign-extended to XLEN bits.</p>
 </div>
 <div class="paragraph">
 <p>The <code>vmv.s.x</code> instruction copies the scalar integer register to element 0 of
 the destination vector register.  If SEW &lt; XLEN, the least-significant bits
 are copied and the upper XLEN-SEW bits are ignored.  If SEW &gt; XLEN, the value
-is zero-extended to SEW bits.  The other elements in the destination vector
-register ( 0 &lt; index &lt; VLEN/SEW) are zeroed.  If <code>vstart</code> &#8805; <code>vl</code>, no
+is sign-extended to SEW bits.  The other elements in the destination vector
+register ( 0 &lt; index &lt; VLEN/SEW) are unchanged.  If <code>vstart</code> &#8805; <code>vl</code>, no
 operation is performed and the destination register is not updated.</p>
 </div>
 <div class="admonitionblock note">
@@ -7252,7 +7237,7 @@ the destination vector register.  If SEW &lt; FLEN, the least-significant
 bits are copied and the upper FLEN-SEW bits are ignored.  If SEW &gt;
 FLEN, the value is NaN-boxed (1-extended) to SEW bits.  The other
 elements in the destination vector register ( 0 &lt; index &lt; VLEN/SEW)
-are zeroed.  If <code>vstart</code> &#8805; <code>vl</code>, no operation is performed and
+are unchanged.  If <code>vstart</code> &#8805; <code>vl</code>, no operation is performed and
 the destination register is not updated.</p>
 </div>
 <div class="admonitionblock note">
@@ -7337,13 +7322,12 @@ unsigned 5-bit quantity.</p>
                     0 &lt;  i &lt; max(vstart, OFFSET)  Unchanged
   max(vstart, OFFSET) &lt;= i &lt; vl                   vd[i] = vs2[i-OFFSET] if mask enabled,
                                                    unchanged if not
-                   vl &lt;= i &lt; VLMAX                Tail elements, vd[i] = 0</pre>
+                   vl &lt;= i &lt; VLMAX                Tail elements, unchanged</pre>
 </div>
 </div>
 <div class="paragraph">
 <p>The destination vector register group for <code>vslideup</code> cannot overlap
-the vector register group of the source, and if operation is masked
-cannot overlap the vector mask register, otherwise an illegal
+the vector register group of the source, otherwise an illegal
 instruction exception is raised.</p>
 </div>
 <div class="admonitionblock note">
@@ -7353,8 +7337,8 @@ instruction exception is raised.</p>
 <div class="title">Note</div>
 </td>
 <td class="content">
-The non-overlap constraints are to avoid WAR hazards on the
-input vectors during execution, and to enable restart with non-zero
+The non-overlap constraint avoids WAR hazards on the
+input vectors during execution, and enables restart with non-zero
 <code>vstart</code>.
 </td>
 </tr>
@@ -7387,23 +7371,8 @@ using an unsigned integer in the <code>x</code> register specified by <code>rs1<
     vslidedown behavior for destination element i in slide
                      0 &lt;  i &lt; vstart         Unchanged
                 vstart &lt;= i &lt; vl             Updated if mask enabled, unchanged if not
-                    vl &lt;= i &lt; VLMAX          Zeroed</pre>
+                    vl &lt;= i &lt; VLMAX          Unchanged</pre>
 </div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-Microarchitectures can optimize zeros written to the end of a
-vector for large offsets by treating as effectively smaller vector
-length, and encoding using the same internal scheme as for regular
-vector instruction writes.
-</td>
-</tr>
-</table>
 </div>
 </div>
 <div class="sect3">
@@ -7434,7 +7403,7 @@ vector register group.</p>
 <div class="paragraph">
 <p>The <code>vl</code> register specifies how many of the destination vector
 register elements are written with source values, and all tail
-elements are zeroed.</p>
+elements are unchanged.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -7443,14 +7412,13 @@ elements are zeroed.</p>
                     i &lt; vstart  unchanged
                 0 = i = vstart  vd[i] = x[rs1] if mask enabled, unchanged if not
   max(vstart, 1) &lt;= i &lt; vl      vd[i] = vs2[i-1] if mask enabled, unchanged if not
-              vl &lt;= i &lt; VLMAX   tail elements, vd[i] = 0</pre>
+              vl &lt;= i &lt; VLMAX   unchanged</pre>
 </div>
 </div>
 <div class="paragraph">
 <p>The <code>vslide1up</code> instruction requires that the destination vector
-register group does not overlap the source vector register group and
-the mask register if masked.  Otherwise, an illegal instruction
-exception is raised.</p>
+register group does not overlap the source vector register group.
+Otherwise, an illegal instruction exception is raised.</p>
 </div>
 </div>
 <div class="sect3">
@@ -7463,7 +7431,7 @@ values from index <em>i</em>+1 in the source vector register group to index
 <div class="paragraph">
 <p>The <code>vl</code> register specifies how many of the destination vector
 register elements are written with source values, and all tail
-elements are zeroed.</p>
+elements are unchanged.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -7485,7 +7453,7 @@ SEW-XLEN bits are ignored.</p>
                        i &lt; vstart  unchanged
              vstart &lt;= i &lt; vl-1    vd[i] = vs2[i+1] if mask enabled, unchanged if not
              vstart &lt;= i = vl-1    vd[vl-1] = x[rs1] if mask enabled, unchanged if not
-                 vl &lt;= i &lt; VLMAX   tail elements, vd[i] = 0</pre>
+                 vl &lt;= i &lt; VLMAX   unchanged</pre>
 </div>
 </div>
 <div class="admonitionblock note">
@@ -7515,7 +7483,7 @@ vector register group.  The index values in the second vector are
 treated as unsigned integers.  The source vector can be read at any
 index &lt; VLMAX regardless of <code>vl</code>.  The number of elements to write to
 the destination register is given by <code>vl</code>, and elements past <code>vl</code> in
-the destination are zeroed.  The operation can be masked.</p>
+the destination are unchanged.  The operation can be masked.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -7587,7 +7555,7 @@ group.</p>
 <p>The vector mask register specified by <code>vs1</code> indicates which of the
 first <code>vl</code> elements of vector register group <code>vs2</code> should be extracted
 and packed into contiguous elements at the beginning of vector
-register <code>vd</code>. Any remaining elements of <code>vd</code> are zeroed.</p>
+register <code>vd</code>. Any remaining elements of <code>vd</code> are unchanged.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -9503,11 +9471,11 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vwsmaccsu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwsmaccus</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111110</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vwmaccsu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwmaccus</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111110</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
@@ -9518,11 +9486,11 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vwsmaccus</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwsmaccsu</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111111</p></td>
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vwmaccus</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vwmaccsu</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111111</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
