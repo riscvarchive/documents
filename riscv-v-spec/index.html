@@ -291,7 +291,7 @@ h2 {
 
 <div class="ftitle">
 <div class="ftitle1">RISC-V "V" Vector Extension</div>
-<div class="ftitle2">Version 0.8-draft-20190906</div>
+<div class="ftitle2">Version 0.8-draft-20191004</div>
 </div>
 
       <div id="content">
@@ -322,7 +322,7 @@ h2 {
 </li>
 <li><a href="#_vector_instruction_formats">5. Vector Instruction Formats</a>
 <ul class="sectlevel2">
-<li><a href="#_scalar_operands">5.1. Scalar operands</a></li>
+<li><a href="#_scalar_operands">5.1. Scalar Operands</a></li>
 <li><a href="#_vector_operands">5.2. Vector Operands</a></li>
 <li><a href="#_vector_masking">5.3. Vector Masking</a></li>
 <li><a href="#_prestart_active_inactive_body_and_tail_element_definitions">5.4. Prestart, Active, Inactive, Body, and Tail Element Definitions</a></li>
@@ -382,9 +382,8 @@ h2 {
 <li><a href="#_vector_single_width_saturating_add_and_subtract">13.1. Vector Single-Width Saturating Add and Subtract</a></li>
 <li><a href="#_vector_single_width_averaging_add_and_subtract">13.2. Vector Single-Width Averaging Add and Subtract</a></li>
 <li><a href="#_vector_single_width_fractional_multiply_with_rounding_and_saturation">13.3. Vector Single-Width Fractional Multiply with Rounding and Saturation</a></li>
-<li><a href="#_vector_widening_saturating_scaled_multiply_add">13.4. Vector Widening Saturating Scaled Multiply-Add</a></li>
-<li><a href="#_vector_single_width_scaling_shift_instructions">13.5. Vector Single-Width Scaling Shift Instructions</a></li>
-<li><a href="#_vector_narrowing_fixed_point_clip_instructions">13.6. Vector Narrowing Fixed-Point Clip Instructions</a></li>
+<li><a href="#_vector_single_width_scaling_shift_instructions">13.4. Vector Single-Width Scaling Shift Instructions</a></li>
+<li><a href="#_vector_narrowing_fixed_point_clip_instructions">13.5. Vector Narrowing Fixed-Point Clip Instructions</a></li>
 </ul>
 </li>
 <li><a href="#_vector_floating_point_instructions">14. Vector Floating-Point Instructions</a>
@@ -465,6 +464,7 @@ h2 {
 <li><a href="#_sgemm_example">A.6. SGEMM example</a></li>
 </ul>
 </li>
+<li><a href="#_calling_convention">Appendix B: Calling Convention</a></li>
 </ul>
 </div>
 <div id="preamble">
@@ -941,16 +941,18 @@ only SEW up to max(XLEN,FLEN) are required to be supported.</p>
 <div class="sect3">
 <h4 id="_vector_register_grouping_vlmul">3.2.2. Vector Register Grouping (<code>vlmul</code>)</h4>
 <div class="paragraph">
-<p>Multiple vector registers can be grouped together to form a <em>vector</em>
-<em>register</em> <em>group</em>, so that a single vector instruction can operate on
+<p>Multiple vector registers can be grouped together, so that a single vector instruction can operate on
 multiple vector registers.  Vector register groups allow double-width
 or larger elements to be operated on with the same vector length as
 standard-width elements.  Vector register groups also provide greater
 execution efficiency for longer application vectors.</p>
 </div>
 <div class="paragraph">
-<p>The number of vector registers in a group, <em>LMUL</em>, is an integer power
-of two set by the <code>vlmul</code> field in <code>vtype</code> (LMUL = 2<sup><code>vlmul[1:0]</code></sup>).</p>
+<p>The term <em>vector</em> <em>register</em> <em>group</em> is used herein to refer to one or
+more vector registers used as a single operand to a vector
+instruction.  The number of vector registers in a group, <em>LMUL</em>, is an
+integer power of two set by the <code>vlmul</code> field in <code>vtype</code> (LMUL =
+2<sup><code>vlmul[1:0]</code></sup>).</p>
 </div>
 <div class="paragraph">
 <p>The derived value VLMAX = LMUL*VLEN/SEW represents the maximum number
@@ -982,7 +984,7 @@ given the current SEW and LMUL settings.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">VLEN/SEW</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vn (no group)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vn (single register in group)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
@@ -1169,6 +1171,10 @@ CSR to zero.
 </table>
 </div>
 <div class="paragraph">
+<p><code>vstart</code> is not modified by vector instructions that raise illegal-instruction
+exceptions.</p>
+</div>
+<div class="paragraph">
 <p>If the value in the <code>vstart</code> register is greater than or equal to the
 vector length <code>vl</code> then no element operations are performed.  The
 <code>vstart</code> register is then reset to zero.</p>
@@ -1198,7 +1204,7 @@ represent indices from 0 through 255.
 <p>The <code>vstart</code> CSR is writable by unprivileged code, but non-zero
 <code>vstart</code> values may cause vector instructions to run substantially
 slower on some implementations, so <code>vstart</code> should not be used by
-application programmers.  A few vector instructions can not be
+application programmers.  A few vector instructions cannot be
 executed with a non-zero <code>vstart</code> value and will raise an illegal
 instruction exception as defined below.</p>
 </div>
@@ -1290,6 +1296,17 @@ mode as specified in the following table.</p>
 </tr>
 </tbody>
 </table>
+<div class="paragraph">
+<p>The rounding function:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>roundoff(v, d) = (v &gt;&gt; d) + r</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>is used to represent this operation in the instruction descriptions below.</p>
+</div>
 <div class="paragraph">
 <p>Bits[XLEN-1:2] should be written as zeros.</p>
 </div>
@@ -1988,7 +2005,7 @@ elements.</p>
 <h2 id="_vector_instruction_formats">5. Vector Instruction Formats</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The instructions in the vector extension fit under four existing major
+<p>The instructions in the vector extension fit under three existing major
 opcodes (LOAD-FP, STORE-FP, AMO) and one new major opcode (OP-V).</p>
 </div>
 <div class="paragraph">
@@ -2060,7 +2077,7 @@ elements and memory.  Vector arithmetic instructions operate on values
 held in vector register elements.</p>
 </div>
 <div class="sect2">
-<h3 id="_scalar_operands">5.1. Scalar operands</h3>
+<h3 id="_scalar_operands">5.1. Scalar Operands</h3>
 <div class="paragraph">
 <p>Scalar operands can be immediates, or taken from the <code>x</code> registers,
 the <code>f</code> registers, or element 0 of a vector register.  Scalar results
@@ -2106,7 +2123,10 @@ so operate on a larger vector register group than that specified in
 not be greater than 8 vector registers, and if an vector instruction
 would require greater than 8 vector registers in a group, an illegal
 instruction exception is raised.  For example, attempting a widening
-operation with LMUL=8 will raise an illegal instruction exception.</p>
+operation producing a widened vector register group result with LMUL=8
+will raise an illegal instruction exception.  Widened scalar values,
+e..g, results from widening reduction operations, are held in the
+first element of a vector register and are treated as if LMUL=1.</p>
 </div>
 </div>
 <div class="sect2">
@@ -2753,7 +2773,7 @@ specified by <code>rs2</code>.</p>
 vector offset operand specified by <code>vs2</code> to the base effective address
 to give the effective address of each element.  The vector offset
 operand is treated as a vector of byte offsets.  If the vector offset
-elements are narrower than XLEN, they are sign-extended to XLEN before
+elements are narrower than XLEN, they are zero-extended to XLEN before
 adding to the base effective address.  If the vector offset elements
 are wider than XLEN, the least-significant XLEN bits are used in the
 address calculation.</p>
@@ -3874,7 +3894,7 @@ in the same vector AMO instruction.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">64</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SEW</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vl*SEW</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">VAMO*E.V</p></td>
 </tr>
@@ -3895,8 +3915,27 @@ to fill SEW.</p>
 </div>
 <div class="paragraph">
 <p>If SEW is less than XLEN, then addresses in the vector <code>vs2</code> are
-sign-extended to XLEN.  If SEW is greater than XLEN, an illegal
+zero-extended to XLEN.  If SEW is greater than XLEN, an illegal
 instruction exception is raised.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Sign-extending addresses held in narrower SEW might match
+expectations on how narrow virtual addresses are usually handled, but
+requires slightly different hardware than for the zero-extension of
+offsets used in indexed load/stores.  By far the most common use case
+for vector AMO instructions is expected to be for address elements
+that have SEW=XLEN, where there is no extension, so the decision was
+made to simplify the hardware.  Software can always explicitly promote
+narrower addresses to sign-extended wider addresses if this is needed.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>Vector AMO instructions are only supported for the memory element
@@ -4525,7 +4564,8 @@ mask register when LMUL=1.
 <div class="paragraph">
 <p>A <code>vn*</code> prefix on the opcode is used to distinguish these instructions
 in the assembler, or a <code>vfn*</code> prefix for narrowing floating-point
-opcodes.</p>
+opcodes.  The double-width source vector register group is signified
+by a <code>w</code> in the source operand suffix (e.g., <code>vnsra.wv</code>)</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -4632,22 +4672,32 @@ the second to generate the carry output (single bit encoded as a mask
 boolean).</p>
 </div>
 <div class="paragraph">
-<p>These instructions are encoded as unmasked instructions (vm=1) and
-operate on all body elements.  Encodings corresponding to the masked
-versions (vm=0) of these instructions are reserved.</p>
-</div>
-<div class="paragraph">
 <p>The carry inputs and outputs are represented using the mask register
 layout as described in Section <a href="#sec-mask-register-layout">Mask Register Layout</a>.  Due to
 encoding constraints, the carry input must come from the implicit <code>v0</code>
 register, but carry outputs can be written to any vector register that
 respects the source/destination overlap restrictions below.</p>
 </div>
+<div class="paragraph">
+<p><code>vadc</code> and <code>vsbc</code> add or subtract the source operands and the carry-in or
+borrow-in, and write the result to vector register <code>vd</code>.
+These instructions are encoded as masked instructions (<code>vm=0</code>), but they operate
+on and write back all body elements.
+Encodings corresponding to the unmasked versions (<code>vm=1</code>) are reserved.</p>
+</div>
+<div class="paragraph">
+<p><code>vmadc</code> and <code>vmsbc</code> add or subtract the source operands, optionally add the
+carry-in or subtract the borrow-in if masked (<code>vm=0</code>), and write the result back
+to mask register <code>vd</code>.
+If unmasked (<code>vm=1</code>), there is no carry-in or borrow-in.
+These instructions operate on and write back all body elements, even if
+masked.</p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre> # Produce sum with carry.
 
-# vd[i] = vs2[i] + vs1[i] + v0[i].LSB
+ # vd[i] = vs2[i] + vs1[i] + v0[i].LSB
  vadc.vvm   vd, vs2, vs1, v0  # Vector-vector
 
  # vd[i] = vs2[i] + x[rs1] + v0[i].LSB
@@ -4658,14 +4708,23 @@ respects the source/destination overlap restrictions below.</p>
 
  # Produce carry out in mask register format
 
-# vd[i] = carry_out(vs2[i] + vs1[i] + v0[i].LSB)
+ # vd[i] = carry_out(vs2[i] + vs1[i] + v0[i].LSB)
  vmadc.vvm   vd, vs2, vs1, v0  # Vector-vector
 
  # vd[i] = carry_out(vs2[i] + x[rs1] + v0[i].LSB)
  vmadc.vxm   vd, vs2, rs1, v0  # Vector-scalar
 
  # vd[i] = carry_out(vs2[i] + imm + v0[i].LSB)
- vmadc.vim   vd, vs2, imm, v0  # Vector-immediate</pre>
+ vmadc.vim   vd, vs2, imm, v0  # Vector-immediate
+
+ # vd[i] = carry_out(vs2[i] + vs1[i])
+ vmadc.vv    vd, vs2, vs1      # Vector-vector, no carry-in
+
+ # vd[i] = carry_out(vs2[i] + x[rs1])
+ vmadc.vx    vd, vs2, rs1      # Vector-scalar, no carry-in
+
+ # vd[i] = carry_out(vs2[i] + imm)
+ vmadc.vi    vd, vs2, imm      # Vector-immediate, no carry-in</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -4690,7 +4749,7 @@ no subtract with immediate instructions.</p>
 <div class="content">
 <pre> # Produce difference with borrow.
 
-# vd[i] = vs2[i] - vs1[i] - v0[i].LSB
+ # vd[i] = vs2[i] - vs1[i] - v0[i].LSB
  vsbc.vvm   vd, vs2, vs1, v0  # Vector-vector
 
  # vd[i] = vs2[i] - x[rs1] - v0[i].LSB
@@ -4702,7 +4761,13 @@ no subtract with immediate instructions.</p>
  vmsbc.vvm   vd, vs2, vs1, v0  # Vector-vector
 
  # vd[i] = borrow_out(vs2[i] - x[rs1] - v0[i].LSB)
- vmsbc.vxm   vd, vs2, rs1, v0  # Vector-scalar</pre>
+ vmsbc.vxm   vd, vs2, rs1, v0  # Vector-scalar
+
+ # vd[i] = borrow_out(vs2[i] - vs1[i])
+ vmsbc.vv    vd, vs2, vs1      # Vector-vector, no borrow-in
+
+ # vd[i] = borrow_out(vs2[i] - x[rs1])
+ vmsbc.vx    vd, vs2, rs1      # Vector-scalar, no borrow-in</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -4789,7 +4854,7 @@ vsra.vi vd, vs2, uimm, vm   # vector-immediate</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Only the low lg2(SEW) bits are read to obtain the shift amount.</p>
+<p>Only the low lg2(SEW) bits are read to obtain the shift amount from a register value.</p>
 </div>
 <div class="paragraph">
 <p>The immediate is treated as an unsigned shift amount, with a maximum
@@ -4810,14 +4875,14 @@ supports shift amounts up to 31 only.</p>
 <div class="listingblock">
 <div class="content">
 <pre> # Narrowing shift right logical, SEW = (2*SEW) &gt;&gt; SEW
- vnsrl.vv vd, vs2, vs1, vm   # vector-vector
- vnsrl.vx vd, vs2, rs1, vm   # vector-scalar
- vnsrl.vi vd, vs2, uimm, vm   # vector-immediate
+ vnsrl.wv vd, vs2, vs1, vm   # vector-vector
+ vnsrl.wx vd, vs2, rs1, vm   # vector-scalar
+ vnsrl.wi vd, vs2, uimm, vm   # vector-immediate
 
  # Narrowing shift right arithmetic, SEW = (2*SEW) &gt;&gt; SEW
- vnsra.vv vd, vs2, vs1, vm   # vector-vector
- vnsra.vx vd, vs2, rs1, vm   # vector-scalar
- vnsra.vi vd, vs2, uimm, vm   # vector-immediate</pre>
+ vnsra.wv vd, vs2, vs1, vm   # vector-vector
+ vnsra.wx vd, vs2, rs1, vm   # vector-scalar
+ vnsra.wi vd, vs2, uimm, vm   # vector-immediate</pre>
 </div>
 </div>
 <div class="admonitionblock note">
@@ -5400,24 +5465,31 @@ vssub.vx vd, vs2, rs1, vm   # vector-scalar</pre>
 <div class="paragraph">
 <p>The averaging add and subtract instructions right shift the result by
 one bit and round off the result according to the setting in <code>vxrm</code>.
-There can be no overflow in the result.</p>
+Both unsigned and signed versions are provided.
+For <code>vaaddu</code>, <code>vaadd</code>, and <code>vasub</code>, there can be no overflow in the result.
+For <code>vasubu</code>, overflow is ignored.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre># For vrxm=rnu, round = 1
+<pre># Averaging add
+# result = roundoff(src1 + src2, 1)
 
-# Averaging add
-# result = (src1 + src2 + round) &gt;&gt; 1;
+# Averaging adds of unsigned integers.
+vaaddu.vv vd, vs2, vs1, vm   # Vector-vector
+vaaddu.vx vd, vs2, rs1, vm   # vector-scalar
 
-# Averaging adds of integers.
+# Averaging adds of signed integers.
 vaadd.vv vd, vs2, vs1, vm   # Vector-vector
 vaadd.vx vd, vs2, rs1, vm   # vector-scalar
-vaadd.vi vd, vs2, imm, vm   # vector-immediate
 
 # Averaging subtract
-# result = (src1 - src2 + round) &gt;&gt; 1;
+# result = roundoff(src1 - src2, 1)
 
-# Averaging subtract of integers.
+# Averaging subtract of unsigned integers.
+vasubu.vv vd, vs2, vs1, vm   # Vector-vector
+vasubu.vx vd, vs2, rs1, vm   # vector-scalar
+
+# Averaging subtract of signed integers.
 vasub.vv vd, vs2, vs1, vm   # Vector-vector
 vasub.vx vd, vs2, rs1, vm   # vector-scalar</pre>
 </div>
@@ -5435,8 +5507,9 @@ is set.</p>
 <div class="listingblock">
 <div class="content">
 <pre># Signed saturating and rounding fractional multiply
-vsmul.vv vd, vs2, vs1, vm  # vd[i] = clip((vs2[i]*vs1[i]+round)&gt;&gt;(SEW-1))
-vsmul.vx vd, vs2, rs1, vm  # vd[i] = clip((vs2[i]*x[rs1]+round)&gt;&gt;(SEW-1))</pre>
+# See vxrm  description for rounding calculation
+vsmul.vv vd, vs2, vs1, vm  # vd[i] = clip(roundoff(vs2[i]*vs1[i], SEW-1))
+vsmul.vx vd, vs2, rs1, vm  # vd[i] = clip(roundoff(vs2[i]*x[rs1], SEW-1))</pre>
 </div>
 </div>
 <div class="admonitionblock note">
@@ -5457,118 +5530,9 @@ precision by one bit for all other products.
 </tr>
 </table>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-Considering adding <code>vxrm</code>-controlled rounding to <code>vmulhu</code>,
-<code>vmulhsu</code>, and <code>vmulh</code> to further support fixed-point.  These would
-not have saturation.
-</td>
-</tr>
-</table>
-</div>
 </div>
 <div class="sect2">
-<h3 id="_vector_widening_saturating_scaled_multiply_add">13.4. Vector Widening Saturating Scaled Multiply-Add</h3>
-<div class="paragraph">
-<p>The widening saturating scaled multiply-add instructions perform an
-SEW-bit * SEW-bit multiply to yield a 2*SEW-bit product. The product
-is then right-shifted by SEW/2 bits with the shifted bits rounded off
-according to <code>vxrm</code>, and the rounded product is added to a 2*SEW-bit
-destination accumulator, with saturation if the result would overflow
-the destination accumulator. The <code>vxsat</code> bit is set if any overflow
-occurs.</p>
-</div>
-<div class="paragraph">
-<p>If any multiplier operand is signed, then the result is treated as a
-signed value for overflow/saturation.  If both multiplier operands are
-unsigned then the result is treated as an unsigned value for
-overflow/saturation.</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 20%;">
-<col style="width: 20%;">
-<col style="width: 20%;">
-<col style="width: 20%;">
-<col style="width: 20%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">SEW</th>
-<th class="tableblock halign-left valign-top">Product Width</th>
-<th class="tableblock halign-left valign-top">Rounded Product</th>
-<th class="tableblock halign-left valign-top">Accumulator</th>
-<th class="tableblock halign-left valign-top">Guard Bits</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">12</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">24</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">64</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">48</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">64</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
-</tr>
-</tbody>
-</table>
-<div class="listingblock">
-<div class="content">
-<pre># Widening unsigned-integer scaled multiply-accumulate
-vwsmaccu.vv vd, vs1, vs2, vm # vd[i] = clipu((+(vs1[i]*vs2[i]+round)&gt;&gt;SEW/2)+vd[i])
-vwsmaccu.vx vd, rs1, vs2, vm # vd[i] = clipu((+(x[rs1]*vs2[i]+round)&gt;&gt;SEW/2)+vd[i])
-
-# Widening signed-integer scaled multiply-accumulate
-vwsmacc.vv vd, vs1, vs2, vm  # vd[i] = clip((+(vs1[i]*vs2[i]+round)&gt;&gt;SEW/2)+vd[i])
-vwsmacc.vx vd, rs1, vs2, vm  # vd[i] = clip((+(x[rs1]*vs2[i]+round)&gt;&gt;SEW/2)+vd[i])
-
-# Widening signed-unsigned-integer scaled multiply-accumulate
-vwsmaccsu.vv vd, vs1, vs2, vm
-             # vd[i] = clip(((signed(vs1[i])*unsigned(vs2[i])+round)&gt;&gt;SEW/2)+vd[i])
-vwsmaccsu.vx vd, rs1, vs2, vm
-             # vd[i] = clip(((signed(x[rs1])*unsigned(vs2[i])+round)&gt;&gt;SEW/2)+vd[i])
-
-# Widening unsigned-signed-integer scaled  multiply-accumulate
-vwsmaccus.vx vd, rs1, vs2, vm
-             # vd[i] = clip(((unsigned(x[rs1])*signed(vs2[i])+round)&gt;&gt;SEW/2)+vd[i])
-
-# For vxrm=rnu, round = (1 &lt;&lt; (SEW/2-1))</pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-An arbitrary scaling/shift amount would be more flexible but
-would require a fourth source operand.
-</td>
-</tr>
-</table>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_vector_single_width_scaling_shift_instructions">13.5. Vector Single-Width Scaling Shift Instructions</h3>
+<h3 id="_vector_single_width_scaling_shift_instructions">13.4. Vector Single-Width Scaling Shift Instructions</h3>
 <div class="paragraph">
 <p>These instructions shift the input value right, and round off the
 shifted out bits according to <code>vxrm</code>.  The scaling right shifts have
@@ -5578,21 +5542,20 @@ The immediate form supports shift amounts up to 31 only.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre> # For vxrm=rnu, round = 1 &lt;&lt; (src2-1), where src2 is vs1[i], x[rs1], uimm
- # Scaling shift right logical
- vssrl.vv vd, vs2, vs1, vm   # vd[i] = ((vs2[i] + round)&gt;&gt;vs1[i])
- vssrl.vx vd, vs2, rs1, vm   # vd[i] = ((vs2[i] + round)&gt;&gt;x[rs1])
- vssrl.vi vd, vs2, uimm, vm   # vd[i] = ((vs2[i] + round)&gt;&gt;uimm)
+<pre> # Scaling shift right logical
+ vssrl.vv vd, vs2, vs1, vm   # vd[i] = roundoff(vs2[i], vs1[i])
+ vssrl.vx vd, vs2, rs1, vm   # vd[i] = roundoff(vs2[i], x[rs1])
+ vssrl.vi vd, vs2, uimm, vm   # vd[i] = roundoff(vs2[i], uimm)
 
  # Scaling shift right arithmetic
- vssra.vv vd, vs2, vs1, vm   # vd[i] = ((vs2[i] + round)&gt;&gt;vs1[i])
- vssra.vx vd, vs2, rs1, vm   # vd[i] = ((vs2[i] + round)&gt;&gt;x[rs1])
- vssra.vi vd, vs2, uimm, vm   # vd[i] = ((vs2[i] + round)&gt;&gt;uimm)</pre>
+ vssra.vv vd, vs2, vs1, vm   # vd[i] = roundoff(vs2[i],vs1[i])
+ vssra.vx vd, vs2, rs1, vm   # vd[i] = roundoff(vs2[i], x[rs1])
+ vssra.vi vd, vs2, uimm, vm   # vd[i] = roundoff(vs2[i], uimm)</pre>
 </div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_vector_narrowing_fixed_point_clip_instructions">13.6. Vector Narrowing Fixed-Point Clip Instructions</h3>
+<h3 id="_vector_narrowing_fixed_point_clip_instructions">13.5. Vector Narrowing Fixed-Point Clip Instructions</h3>
 <div class="paragraph">
 <p>The <code>vnclip</code> instructions are used to pack a fixed-point value into a
 narrower destination.  The instructions support rounding, scaling, and
@@ -5608,16 +5571,16 @@ form supports shift amounts up to 31 only.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre> # Narrowing unsigned clip
- vnclipu.vv vd, vs2, vs1, vm   # vector-vector
- vnclipu.vx vd, vs2, rs1, vm   # vector-scalar
- vnclipu.vi vd, vs2, uimm, vm   # vector-immediate
+<pre># Narrowing unsigned clip,  vd[i] = clip(roundoff(vs2[i], vs1[i]) )
+#                            SEW                  2*SEW     SEW
+ vnclipu.wv vd, vs2, vs1, vm   # vector-vector
+ vnclipu.wx vd, vs2, rs1, vm   # vector-scalar
+ vnclipu.wi vd, vs2, uimm, vm  # vector-immediate
 
-# Narrowing signed clip,  vd[i] = clip(round(vs2[i] + rnd) &gt;&gt; vs1[i])
-#                          SEW           2*SEW                 SEW
- vnclip.vv vd, vs2, vs1, vm   # vector-vector
- vnclip.vx vd, vs2, rs1, vm   # vector-scalar
- vnclip.vi vd, vs2, uimm, vm   # vector-immediate</pre>
+# Narrowing signed clip
+ vnclip.wv vd, vs2, vs1, vm   # vector-vector
+ vnclip.wx vd, vs2, rs1, vm   # vector-scalar
+ vnclip.wi vd, vs2, uimm, vm  # vector-immediate</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -6202,13 +6165,15 @@ and floating-point datatypes to a type of half the width.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>vfncvt.xu.f.v vd, vs2, vm   # Convert double-width float to unsigned integer.
-vfncvt.x.f.v  vd, vs2, vm   # Convert double-width float to signed integer.
+<pre>vfncvt.xu.f.w vd, vs2, vm   # Convert double-width float to unsigned integer.
+vfncvt.x.f.w  vd, vs2, vm   # Convert double-width float to signed integer.
 
-vfncvt.f.xu.v vd, vs2, vm   # Convert double-width unsigned integer to float.
-vfncvt.f.x.v  vd, vs2, vm   # Convert double-width signed integer to float.
+vfncvt.f.xu.w vd, vs2, vm   # Convert double-width unsigned integer to float.
+vfncvt.f.x.w  vd, vs2, vm   # Convert double-width signed integer to float.
 
-vfncvt.f.f.v vd, vs2, vm   # Convert double-width float to single-width float.</pre>
+vfncvt.f.f.w vd, vs2, vm    # Convert double-width float to single-width float.
+vfncvt.rod.f.f.w vd, vs2, vm  # Convert double-width float to single-width float,
+                              #  rounding towards odd.</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -6224,9 +6189,10 @@ as other narrowing instructions (see <a href="#sec-narrowing">Narrowing Vector A
 <td class="content">
 A full set of floating-point widening conversions are not
 supported as single instructions. Conversions can be implemented in
-several halving steps, with equivalently rounded results and with the
-same exception flags raised (possibly raised redundantly in multiple
-steps).
+a sequence of halving steps.  Results are equivalently rounded and
+the same exception flags are raised if all but the last halving step
+use round-towards-odd (<code>vfncvt.rod.f.f.w</code>).  Only the final step
+should use the desired rounding mode.
 </td>
 </tr>
 </table>
@@ -6801,7 +6767,7 @@ GPR.</p>
 <td class="content">
 Software can assume that any negative value (highest bit set)
 corresponds to no element found, as vector lengths will never exceed
-2<sup>31</sup> on any implementation.
+2<sup>(XLEN-1)</sup> on any implementation.
 </td>
 </tr>
 </table>
@@ -7175,8 +7141,8 @@ register.  The instructions ignore LMUL and vector register groups.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>vmv.x.s rd, vs2  # rd = vs2[0] (rs1=0)
-vmv.s.x vd, rs1  # vd[0] = rs1 (vs2=0)</pre>
+<pre>vmv.x.s rd, vs2  # x[rd] = vs2[0] (rs1=0)
+vmv.s.x vd, rs1  # vd[0] = x[rs1] (vs2=0)</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -7207,7 +7173,7 @@ destination vector register group, regardless of <code>vstart</code>.
 </table>
 </div>
 <div class="paragraph">
-<p>The encodings corresponding to the masked versions (vm=0) of <code>vmv.x.s</code>
+<p>The encodings corresponding to the masked versions (<code>vm=0</code>) of <code>vmv.x.s</code>
 and <code>vmv.s.x</code> are reserved.</p>
 </div>
 </div>
@@ -7220,8 +7186,8 @@ register.  The instructions ignore LMUL and vector register groups.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>vfmv.f.s rd, vs2  # rd = vs2[0] (rs1=0)
-vfmv.s.f vd, rs1  # vd[0] = rs1 (vs2=0)</pre>
+<pre>vfmv.f.s rd, vs2  # f[rd] = vs2[0] (rs1=0)
+vfmv.s.f vd, rs1  # vd[0] = f[rs1] (vs2=0)</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -7232,13 +7198,13 @@ transferred and the upper SEW-FLEN bits are ignored.  If SEW &lt; FLEN,
 the value is NaN-boxed (1-extended) to FLEN bits.</p>
 </div>
 <div class="paragraph">
-<p>The <code>vfmv.s.f</code> instruction copies the scalar register to element 0 of
-the destination vector register.  If SEW &lt; FLEN, the least-significant
-bits are copied and the upper FLEN-SEW bits are ignored.  If SEW &gt;
-FLEN, the value is NaN-boxed (1-extended) to SEW bits.  The other
-elements in the destination vector register ( 0 &lt; index &lt; VLEN/SEW)
-are unchanged.  If <code>vstart</code> &#8805; <code>vl</code>, no operation is performed and
-the destination register is not updated.</p>
+<p>The <code>vfmv.s.f</code> instruction copies the scalar floating-point register
+to element 0 of the destination vector register.  If SEW &lt; FLEN, the
+least-significant bits are copied and the upper FLEN-SEW bits are
+ignored.  If SEW &gt; FLEN, the value is NaN-boxed (1-extended) to SEW
+bits.  The other elements in the destination vector register ( 0 &lt;
+index &lt; VLEN/SEW) are unchanged.  If <code>vstart</code> &#8805; <code>vl</code>, no operation
+is performed and the destination register is not updated.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -7254,7 +7220,7 @@ destination vector register group, regardless of <code>vstart</code>.
 </table>
 </div>
 <div class="paragraph">
-<p>The encodings corresponding to the masked versions (vm=0) of <code>vfmv.f.s</code>
+<p>The encodings corresponding to the masked versions (<code>vm=0</code>) of <code>vfmv.f.s</code>
 and <code>vfmv.s.f</code> are reserved.</p>
 </div>
 </div>
@@ -7298,6 +7264,10 @@ destination vector register group, regardless of <code>vstart</code>.
 </tr>
 </table>
 </div>
+<div class="paragraph">
+<p>The slide instructions may be masked, with mask element <em>i</em> controlling whether
+<em>destination</em> element <em>i</em> is written.</p>
+</div>
 <div class="sect3">
 <h4 id="_vector_slideup_instructions">17.3.1. Vector Slideup Instructions</h4>
 <div class="listingblock">
@@ -7307,11 +7277,13 @@ destination vector register group, regardless of <code>vstart</code>.
 </div>
 </div>
 <div class="paragraph">
-<p>For <code>vslideup</code>, the value in <code>vl</code> specifies the number of destination
+<p>For <code>vslideup</code>, the value in <code>vl</code> specifies the maximum number of destination
 elements that are written.  The start index (<em>OFFSET</em>) for the
 destination can be either specified using an unsigned integer in the
 <code>x</code> register specified by <code>rs1</code>, or a 5-bit immediate treated as an
-unsigned 5-bit quantity.</p>
+unsigned 5-bit quantity.
+Destination elements <em>OFFSET</em> through <code>vl</code>-1 are written if unmasked and
+if <em>OFFSET</em> &lt; <code>vl</code>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -7365,7 +7337,7 @@ using an unsigned integer in the <code>x</code> register specified by <code>rs1<
 <div class="listingblock">
 <div class="content">
 <pre>    vslidedown behavior for source elements for element i in slide
-                     0 &lt;= i+OFFSET &lt; VLMAX   Read vs2[i+offset]
+                     0 &lt;= i+OFFSET &lt; VLMAX   Read vs2[i+OFFSET]
                  VLMAX &lt;= i+OFFSET           Read as 0
 
     vslidedown behavior for destination element i in slide
@@ -7391,7 +7363,7 @@ element position.</p>
 <p>The <code>vslide1up</code> instruction places the <code>x</code> register argument at
 location 0 of the destination vector register group, provided that
 element 0 is active, otherwise the destination element is unchanged.
-If XLEN &lt; SEW, the value is zero-extended to SEW bits.  If XLEN &gt; SEW,
+If XLEN &lt; SEW, the value is sign-extended to SEW bits.  If XLEN &gt; SEW,
 the least-significant bits are copied over and the high SEW-XLEN bits
 are ignored.</p>
 </div>
@@ -7442,7 +7414,7 @@ elements are unchanged.</p>
 <p>The <code>vslide1down</code> instruction places the <code>x</code> register argument at
 location <code>vl</code>-1 in the destination vector register, provided that
 element <code>vl-1</code> is active, otherwise the destination element is
-unchanged. If XLEN &lt; SEW, the value is zero-extended to SEW bits.  If
+unchanged. If XLEN &lt; SEW, the value is sign-extended to SEW bits.  If
 XLEN &gt; SEW, the least-significant bits are copied over and the high
 SEW-XLEN bits are ignored.</p>
 </div>
@@ -7515,7 +7487,7 @@ These forms allow any vector element to be "splatted" to an entire vector.
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>vrgather.vx vd, vs2, rs1, vm # vd[i] = (x[rs1] &gt;= VLMAX) ? 0 : vs2[rs1]
+<pre>vrgather.vx vd, vs2, rs1, vm # vd[i] = (x[rs1] &gt;= VLMAX) ? 0 : vs2[x[rs1]]
 vrgather.vi vd, vs2, uimm, vm # vd[i] = (uimm &gt;= VLMAX) ? 0 : vs2[uimm]</pre>
 </div>
 </div>
@@ -7563,9 +7535,15 @@ register <code>vd</code>. Any remaining elements of <code>vd</code> are unchange
 
         1 1 0 1 0 0 1 0 1   v0
         8 7 6 5 4 3 2 1 0   v1
+        1 2 3 4 5 6 7 8 9   v2
+
                                 vcompress.vm v2, v1, v0
-        0 0 0 0 8 7 5 2 0   v2</pre>
+        1 2 3 4 8 7 5 2 0   v2</pre>
 </div>
+</div>
+<div class="paragraph">
+<p><code>vcompress</code> is encoded as an unmasked instruction (<code>vm=1</code>). The equivalent
+masked instruction (<code>vm=0</code>) is reserved.</p>
 </div>
 <div class="paragraph">
 <p>The destination vector register group cannot overlap the source vector
@@ -8308,12 +8286,8 @@ vfdot.vv vd, vs2, vs1, vm   # Vector-vector</pre>
 <div class="listingblock">
 <div class="content">
 <pre># Dot product. SEW=32, EDIV=2
-vfdot.v  vd, vs2, vs1, vm # vd[i][31:0] += vs2[i][31:16] * vs1[i][31:16]
-                                          + vs2[i][15:0] * vs1[i][15:0]
-
-# Floating-point sub-vectors of two half-precision floats packed into 32-bit elements.
-vsetvli t0, a0, e32,m1,d2  # Vectors of 32-bit elements, divided into 16b sub-elements
-vfdot.vv v1, v2, v3   # v1[i][31:0] +=  v2[i][31:16]*v3[i][31:16] + v2[i][16:0]*v3[i][16:0]
+vfdot.vv  vd, vs2, vs1, vm # vd[i][31:0] += vs2[i][31:16] * vs1[i][31:16]
+                                           + vs2[i][15:0] * vs1[i][15:0]
 
 # Floating-point sub-vectors of two half-precision floats packed into 32-bit elements.
 vsetvli t0, a0, e32,m1,d2  # Vectors of 32-bit elements, divided into 16b sub-elements
@@ -8570,9 +8544,9 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">001000</p></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vaaddu</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">001000</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
@@ -8585,9 +8559,9 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vand</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">001001</p></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vaadd</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">001001</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
@@ -8600,9 +8574,9 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vor</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">001010</p></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vasubu</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">001010</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">F</p></td>
@@ -8615,9 +8589,9 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vxor</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">001011</p></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vasub</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">001011</p></td>
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"></td>
@@ -9052,10 +9026,10 @@ vfdot.vv v1, v2, v3
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">100100</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vaadd</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">100100</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
@@ -9082,10 +9056,10 @@ vfdot.vv v1, v2, v3
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">100110</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vasub</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">100110</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
@@ -9438,10 +9412,10 @@ vfdot.vv v1, v2, v3
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111100</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vwsmaccu</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111100</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
@@ -9453,10 +9427,10 @@ vfdot.vv v1, v2, v3
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111101</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vwsmacc</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111101</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
@@ -9468,12 +9442,12 @@ vfdot.vv v1, v2, v3
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111110</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vwsmaccus</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111110</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vwmaccus</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111110</p></td>
@@ -9484,11 +9458,11 @@ vfdot.vv v1, v2, v3
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111111</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vwsmaccsu</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111111</p></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vwmaccsu</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111111</p></td>
@@ -9651,23 +9625,27 @@ vfdot.vv v1, v2, v3
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">10000</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.xu.f.v</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.xu.f.w</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">10001</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.x.f.v</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.x.f.w</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">10010</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.f.xu.v</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.f.xu.w</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">10011</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.f.x.v</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.f.x.w</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">10100</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.f.f.v</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.f.f.w</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vfncvt.rod.f.f.w</p></td>
 </tr>
 </tbody>
 </table>
@@ -10095,6 +10073,49 @@ exit:
     ret</pre>
 </div>
 </div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_calling_convention">Appendix B: Calling Convention</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In the RISC-V psABI, the vector registers <code>v0</code>-<code>v31</code> are all caller-saved.
+The <code>vstart</code>, <code>vl</code>, and <code>vtype</code> CSRs are also caller-saved.</p>
+</div>
+<div class="paragraph">
+<p>The <code>vxrm</code> and <code>vxsat</code> fields have thread storage duration, like the other
+fields of the <code>fcsr</code>.</p>
+</div>
+<div class="paragraph">
+<p>Executing a system call causes <code>v0</code>-<code>v31</code> to become unspecified.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+This scheme allows system calls that cause context switches to avoid
+saving and later restoring the vector registers.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The values that <code>v0</code>-<code>v31</code> assume after a system call cannot expose
+information from other processes, so typically the registers will either
+remain intact or will be zeroed.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -10636,7 +10657,7 @@ https://highlightjs.org/
       languagePrefixRe = /\blang(?:uage)?-([\w-]+)\b/i,
       fixMarkupRe      = /((^(<[^>]+>|\t|)+|(?:\n)))/gm;
 
-  // The object will be assigned by the build tool. It used to synchronize API 
+  // The object will be assigned by the build tool. It used to synchronize API
   // of external language files with minified version of the highlight.js library.
   var API_REPLACES;
 
@@ -10650,6 +10671,9 @@ https://highlightjs.org/
     useBR: false,
     languages: undefined
   };
+
+  // keywords that should have no default relevance value
+  var COMMON_KEYWORDS = 'of and for in not or if then'.split(' ')
 
 
   /* Utility functions */
@@ -10815,13 +10839,34 @@ https://highlightjs.org/
 
   /* Initialization */
 
-  function expand_mode(mode) {
+  function dependencyOnParent(mode) {
+    if (!mode) return false;
+
+    return mode.endsWithParent || dependencyOnParent(mode.starts)
+  }
+
+  function expand_or_clone_mode(mode) {
     if (mode.variants && !mode.cached_variants) {
       mode.cached_variants = mode.variants.map(function(variant) {
         return inherit(mode, {variants: null}, variant);
       });
     }
-    return mode.cached_variants || (mode.endsWithParent && [inherit(mode)]) || [mode];
+
+    // EXPAND
+    // if we have variants then essentually "replace" the mode with the variants
+    // this happens in compileMode, where this function is called from
+    if (mode.cached_variants)
+      return mode.cached_variants;
+
+    // CLONE
+    // if we have dependencies on parents then we need a unique
+    // instance of ourselves, so we can be reused with many
+    // different parents without issue
+    if (dependencyOnParent(mode))
+      return [inherit(mode, { starts: mode.starts ? inherit(mode.starts) : null })]
+
+    // no special dependency issues, just return ourselves
+    return [mode]
   }
 
   function restoreLanguageApi(obj) {
@@ -10831,6 +10876,44 @@ https://highlightjs.org/
         obj[key] && (obj[API_REPLACES[key]] = obj[key]);
       (obj.contains || []).concat(obj.variants || []).forEach(restoreLanguageApi);
     }
+  }
+
+  function compileKeywords(rawKeywords, case_insensitive) {
+      var compiled_keywords = {};
+
+      if (typeof rawKeywords === 'string') { // string
+        splitAndCompile('keyword', rawKeywords);
+      } else {
+        objectKeys(rawKeywords).forEach(function (className) {
+          splitAndCompile(className, rawKeywords[className]);
+        });
+      }
+    return compiled_keywords;
+
+    // ---
+
+    function splitAndCompile(className, str) {
+      if (case_insensitive) {
+        str = str.toLowerCase();
+      }
+      str.split(' ').forEach(function(keyword) {
+        var pair = keyword.split('|');
+        compiled_keywords[pair[0]] = [className, scoreForKeyword(pair[0], pair[1])];
+      });
+    };
+  }
+
+  function scoreForKeyword(keyword, providedScore) {
+    // manual scores always win over common keywords
+    // so you can force a score of 1 if you really insist
+    if (providedScore)
+      return Number(providedScore)
+
+    return commonKeyword(keyword) ? 0 : 1;
+  }
+
+  function commonKeyword(word) {
+    return COMMON_KEYWORDS.indexOf(word.toLowerCase()) != -1
   }
 
   function compileLanguage(language) {
@@ -10846,8 +10929,15 @@ https://highlightjs.org/
       );
     }
 
+    function reCountMatchGroups(re) {
+      return (new RegExp(re.toString() + '|')).exec('').length - 1;
+    }
+
     // joinRe logically computes regexps.join(separator), but fixes the
     // backreferences so they continue to match.
+    // it also places each individual regular expression into it's own
+    // match group, keeping track of the sequencing of those match groups
+    // is currently an exercise for the caller. :-)
     function joinRe(regexps, separator) {
       // backreferenceRe matches an open parenthesis or backreference. To avoid
       // an incorrect parse, it additionally matches the following:
@@ -10860,11 +10950,13 @@ https://highlightjs.org/
       var numCaptures = 0;
       var ret = '';
       for (var i = 0; i < regexps.length; i++) {
+        numCaptures += 1;
         var offset = numCaptures;
         var re = reStr(regexps[i]);
         if (i > 0) {
           ret += separator;
         }
+        ret += "(";
         while (re.length > 0) {
           var match = backreferenceRe.exec(re);
           if (match == null) {
@@ -10883,8 +10975,73 @@ https://highlightjs.org/
             }
           }
         }
+        ret += ")";
       }
       return ret;
+    }
+
+    function buildModeRegex(mode) {
+
+      var matchIndexes = {};
+      var matcherRe;
+      var regexes = [];
+      var matcher = {};
+      var matchAt = 1;
+
+      function addRule(rule, regex) {
+        matchIndexes[matchAt] = rule;
+        regexes.push([rule, regex]);
+        matchAt += reCountMatchGroups(regex) + 1;
+      }
+
+      var term;
+      for (var i=0; i < mode.contains.length; i++) {
+        var re;
+        term = mode.contains[i];
+        if (term.beginKeywords) {
+          re = '\\.?(?:' + term.begin + ')\\.?';
+        } else {
+          re = term.begin;
+        }
+        addRule(term, re);
+      }
+      if (mode.terminator_end)
+        addRule("end", mode.terminator_end);
+      if (mode.illegal)
+        addRule("illegal", mode.illegal);
+
+      var terminators = regexes.map(function(el) { return el[1] });
+      matcherRe = langRe(joinRe(terminators, '|'), true);
+
+      matcher.lastIndex = 0;
+      matcher.exec = function(s) {
+        var rule;
+
+        if( regexes.length === 0) return null;
+
+        matcherRe.lastIndex = matcher.lastIndex;
+        var match = matcherRe.exec(s);
+        if (!match) { return null; }
+
+        for(var i = 0; i<match.length; i++) {
+          if (match[i] != undefined && matchIndexes["" +i] != undefined ) {
+            rule = matchIndexes[""+i];
+            break;
+          }
+        }
+
+        // illegal or end match
+        if (typeof rule === "string") {
+          match.type = rule;
+          match.extra = [mode.illegal, mode.terminator_end];
+        } else {
+          match.type = "begin";
+          match.rule = rule;
+        }
+        return match;
+      }
+
+      return matcher;
     }
 
     function compileMode(mode, parent) {
@@ -10893,28 +11050,9 @@ https://highlightjs.org/
       mode.compiled = true;
 
       mode.keywords = mode.keywords || mode.beginKeywords;
-      if (mode.keywords) {
-        var compiled_keywords = {};
+      if (mode.keywords)
+        mode.keywords = compileKeywords(mode.keywords, language.case_insensitive)
 
-        var flatten = function(className, str) {
-          if (language.case_insensitive) {
-            str = str.toLowerCase();
-          }
-          str.split(' ').forEach(function(kw) {
-            var pair = kw.split('|');
-            compiled_keywords[pair[0]] = [className, pair[1] ? Number(pair[1]) : 1];
-          });
-        };
-
-        if (typeof mode.keywords === 'string') { // string
-          flatten('keyword', mode.keywords);
-        } else {
-          objectKeys(mode.keywords).forEach(function (className) {
-            flatten(className, mode.keywords[className]);
-          });
-        }
-        mode.keywords = compiled_keywords;
-      }
       mode.lexemesRe = langRe(mode.lexemes || /\w+/, true);
 
       if (parent) {
@@ -10942,7 +11080,7 @@ https://highlightjs.org/
         mode.contains = [];
       }
       mode.contains = Array.prototype.concat.apply([], mode.contains.map(function(c) {
-        return expand_mode(c === 'self' ? mode : c);
+        return expand_or_clone_mode(c === 'self' ? mode : c);
       }));
       mode.contains.forEach(function(c) {compileMode(c, mode);});
 
@@ -10950,16 +11088,9 @@ https://highlightjs.org/
         compileMode(mode.starts, parent);
       }
 
-      var terminators =
-        mode.contains.map(function(c) {
-          return c.beginKeywords ? '\\.?(?:' + c.begin + ')\\.?' : c.begin;
-        })
-        .concat([mode.terminator_end, mode.illegal])
-        .map(reStr)
-        .filter(Boolean);
-      mode.terminators = terminators.length ? langRe(joinRe(terminators, '|'), true) : {exec: function(/*s*/) {return null;}};
+      mode.terminators = buildModeRegex(mode);
     }
-    
+
     compileMode(language);
   }
 
@@ -10978,19 +11109,6 @@ https://highlightjs.org/
       return new RegExp(value.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'm');
     }
 
-    function subMode(lexeme, mode) {
-      var i, length;
-
-      for (i = 0, length = mode.contains.length; i < length; i++) {
-        if (testRe(mode.contains[i].beginRe, lexeme)) {
-          if (mode.contains[i].endSameAsBegin) {
-            mode.contains[i].endRe = escapeRe( mode.contains[i].beginRe.exec(lexeme)[0] );
-          }
-          return mode.contains[i];
-        }
-      }
-    }
-
     function endOfMode(mode, lexeme) {
       if (testRe(mode.endRe, lexeme)) {
         while (mode.endsParent && mode.parent) {
@@ -11003,23 +11121,21 @@ https://highlightjs.org/
       }
     }
 
-    function isIllegal(lexeme, mode) {
-      return !ignore_illegals && testRe(mode.illegalRe, lexeme);
-    }
-
     function keywordMatch(mode, match) {
       var match_str = language.case_insensitive ? match[0].toLowerCase() : match[0];
       return mode.keywords.hasOwnProperty(match_str) && mode.keywords[match_str];
     }
 
     function buildSpan(classname, insideSpan, leaveOpen, noPrefix) {
+      if (!leaveOpen && insideSpan === '') return '';
+      if (!classname) return insideSpan;
+
       var classPrefix = noPrefix ? '' : options.classPrefix,
           openSpan    = '<span class="' + classPrefix,
           closeSpan   = leaveOpen ? '' : spanEndTag;
 
       openSpan += classname + '">';
 
-      if (!classname) return insideSpan;
       return openSpan + insideSpan + closeSpan;
     }
 
@@ -11082,74 +11198,114 @@ https://highlightjs.org/
       top = Object.create(mode, {parent: {value: top}});
     }
 
-    function processLexeme(buffer, lexeme) {
 
-      mode_buffer += buffer;
+    function doBeginMatch(match) {
+      var lexeme = match[0];
+      var new_mode = match.rule;
+
+      if (new_mode && new_mode.endSameAsBegin) {
+        new_mode.endRe = escapeRe( lexeme );
+      }
+
+      if (new_mode.skip) {
+        mode_buffer += lexeme;
+      } else {
+        if (new_mode.excludeBegin) {
+          mode_buffer += lexeme;
+        }
+        processBuffer();
+        if (!new_mode.returnBegin && !new_mode.excludeBegin) {
+          mode_buffer = lexeme;
+        }
+      }
+      startNewMode(new_mode, lexeme);
+      return new_mode.returnBegin ? 0 : lexeme.length;
+    }
+
+    function doEndMatch(match) {
+      var lexeme = match[0];
+      var end_mode = endOfMode(top, lexeme);
+      if (!end_mode) { return; }
+
+      var origin = top;
+      if (origin.skip) {
+        mode_buffer += lexeme;
+      } else {
+        if (!(origin.returnEnd || origin.excludeEnd)) {
+          mode_buffer += lexeme;
+        }
+        processBuffer();
+        if (origin.excludeEnd) {
+          mode_buffer = lexeme;
+        }
+      }
+      do {
+        if (top.className) {
+          result += spanEndTag;
+        }
+        if (!top.skip && !top.subLanguage) {
+          relevance += top.relevance;
+        }
+        top = top.parent;
+      } while (top !== end_mode.parent);
+      if (end_mode.starts) {
+        if (end_mode.endSameAsBegin) {
+          end_mode.starts.endRe = end_mode.endRe;
+        }
+        startNewMode(end_mode.starts, '');
+      }
+      return origin.returnEnd ? 0 : lexeme.length;
+    }
+
+    var lastMatch = {};
+    function processLexeme(text_before_match, match) {
+
+      var lexeme = match && match[0];
+
+      // add non-matched text to the current mode buffer
+      mode_buffer += text_before_match;
 
       if (lexeme == null) {
         processBuffer();
         return 0;
       }
 
-      var new_mode = subMode(lexeme, top);
-      if (new_mode) {
-        if (new_mode.skip) {
-          mode_buffer += lexeme;
-        } else {
-          if (new_mode.excludeBegin) {
-            mode_buffer += lexeme;
-          }
-          processBuffer();
-          if (!new_mode.returnBegin && !new_mode.excludeBegin) {
-            mode_buffer = lexeme;
-          }
-        }
-        startNewMode(new_mode, lexeme);
-        return new_mode.returnBegin ? 0 : lexeme.length;
+      // we've found a 0 width match and we're stuck, so we need to advance
+      // this happens when we have badly behaved rules that have optional matchers to the degree that
+      // sometimes they can end up matching nothing at all
+      // Ref: https://github.com/highlightjs/highlight.js/issues/2140
+      if (lastMatch.type=="begin" && match.type=="end" && lastMatch.index == match.index && lexeme === "") {
+        // spit the "skipped" character that our regex choked on back into the output sequence
+        mode_buffer += value.slice(match.index, match.index + 1)
+        return 1;
       }
+      lastMatch = match;
 
-      var end_mode = endOfMode(top, lexeme);
-      if (end_mode) {
-        var origin = top;
-        if (origin.skip) {
-          mode_buffer += lexeme;
-        } else {
-          if (!(origin.returnEnd || origin.excludeEnd)) {
-            mode_buffer += lexeme;
-          }
-          processBuffer();
-          if (origin.excludeEnd) {
-            mode_buffer = lexeme;
-          }
-        }
-        do {
-          if (top.className) {
-            result += spanEndTag;
-          }
-          if (!top.skip && !top.subLanguage) {
-            relevance += top.relevance;
-          }
-          top = top.parent;
-        } while (top !== end_mode.parent);
-        if (end_mode.starts) {
-          if (end_mode.endSameAsBegin) {
-            end_mode.starts.endRe = end_mode.endRe;
-          }
-          startNewMode(end_mode.starts, '');
-        }
-        return origin.returnEnd ? 0 : lexeme.length;
-      }
-
-      if (isIllegal(lexeme, top))
+      if (match.type==="begin") {
+        return doBeginMatch(match);
+      } else if (match.type==="illegal" && !ignore_illegals) {
+        // illegal match, we do not continue processing
         throw new Error('Illegal lexeme "' + lexeme + '" for mode "' + (top.className || '<unnamed>') + '"');
+      } else if (match.type==="end") {
+        var processed = doEndMatch(match);
+        if (processed != undefined)
+          return processed;
+      }
 
       /*
-      Parser should not reach this point as all types of lexemes should be caught
-      earlier, but if it does due to some bug make sure it advances at least one
-      character forward to prevent infinite looping.
+      Why might be find ourselves here?  Only one occasion now.  An end match that was
+      triggered but could not be completed.  When might this happen?  When an `endSameasBegin`
+      rule sets the end rule to a specific match.  Since the overall mode termination rule that's
+      being used to scan the text isn't recompiled that means that any match that LOOKS like
+      the end (but is not, because it is not an exact match to the beginning) will
+      end up here.  A definite end match, but when `doEndMatch` tries to "reapply"
+      the end rule and fails to match, we wind up here, and just silently ignore the end.
+
+      This causes no real harm other than stopping a few times too many.
       */
+
       mode_buffer += lexeme;
-      return lexeme.length || 1;
+      return lexeme.length;
     }
 
     var language = getLanguage(name);
@@ -11175,7 +11331,7 @@ https://highlightjs.org/
         match = top.terminators.exec(value);
         if (!match)
           break;
-        count = processLexeme(value.substring(index, match.index), match[0]);
+        count = processLexeme(value.substring(index, match.index), match);
         index = match.index + count;
       }
       processLexeme(value.substr(index));
@@ -11187,12 +11343,14 @@ https://highlightjs.org/
       return {
         relevance: relevance,
         value: result,
+        illegal:false,
         language: name,
         top: top
       };
     } catch (e) {
       if (e.message && e.message.indexOf('Illegal') !== -1) {
         return {
+          illegal: true,
           relevance: 0,
           value: escape(value)
         };
@@ -11344,6 +11502,8 @@ https://highlightjs.org/
   function registerLanguage(name, language) {
     var lang = languages[name] = language(hljs);
     restoreLanguageApi(lang);
+    lang.rawDefinition = language.bind(null,hljs);
+
     if (lang.aliases) {
       lang.aliases.forEach(function(alias) {aliases[alias] = name;});
     }
@@ -11492,6 +11652,9 @@ module.exports = function(hljs) {
     begin: '\\b[a-z\\d_]*_t\\b'
   };
 
+  // https://en.cppreference.com/w/cpp/language/escape
+  // \\ \x \xFF \u2837 \u00323747 \374
+  var CHARACTER_ESCAPES = '\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4,8}|[0-7]{3}|\\S)'
   var STRINGS = {
     className: 'string',
     variants: [
@@ -11500,11 +11663,11 @@ module.exports = function(hljs) {
         illegal: '\\n',
         contains: [hljs.BACKSLASH_ESCAPE]
       },
-      { begin: /(?:u8?|U|L)?R"([^()\\ ]{0,16})\((?:.|\n)*?\)\1"/ },
       {
-        begin: '\'\\\\?.', end: '\'',
+        begin: '(u8?|U|L)?\'(' + CHARACTER_ESCAPES + "|.)", end: '\'',
         illegal: '.'
-      }
+      },
+      { begin: /(?:u8?|U|L)?R"([^()\\ ]{0,16})\((?:.|\n)*?\)\1"/ }
     ]
   };
 
@@ -11549,17 +11712,18 @@ module.exports = function(hljs) {
       'unsigned long volatile static protected bool template mutable if public friend ' +
       'do goto auto void enum else break extern using asm case typeid ' +
       'short reinterpret_cast|10 default double register explicit signed typename try this ' +
-      'switch continue inline delete alignof constexpr decltype ' +
+      'switch continue inline delete alignof constexpr consteval constinit decltype ' +
+      'concept co_await co_return co_yield requires ' +
       'noexcept static_assert thread_local restrict _Bool complex _Complex _Imaginary ' +
       'atomic_bool atomic_char atomic_schar ' +
       'atomic_uchar atomic_short atomic_ushort atomic_int atomic_uint atomic_long atomic_ulong atomic_llong ' +
       'atomic_ullong new throw return ' +
       'and or not',
-    built_in: 'std string cin cout cerr clog stdin stdout stderr stringstream istringstream ostringstream ' +
+    built_in: 'std string wstring cin cout cerr clog stdin stdout stderr stringstream istringstream ostringstream ' +
       'auto_ptr deque list queue stack vector map set bitset multiset multimap unordered_set ' +
       'unordered_map unordered_multiset unordered_multimap array shared_ptr abort abs acos ' +
       'asin atan2 atan calloc ceil cosh cos exit exp fabs floor fmod fprintf fputs free frexp ' +
-      'fscanf isalnum isalpha iscntrl isdigit isgraph islower isprint ispunct isspace isupper ' +
+      'fscanf future isalnum isalpha iscntrl isdigit isgraph islower isprint ispunct isspace isupper ' +
       'isxdigit tolower toupper labs ldexp log10 log malloc realloc memchr memcmp memcpy memset modf pow ' +
       'printf putchar puts scanf sinh sin snprintf sprintf sqrt sscanf strcat strchr strcmp ' +
       'strcpy strcspn strlen strncat strncmp strncpy strpbrk strrchr strspn strstr tanh tan ' +
