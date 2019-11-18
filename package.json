@@ -20,7 +20,7 @@
   "homepage": "https://github.com/riscv/documents#readme",
   "dependencies": {},
   "devDependencies": {
-    "datasheet": "^0.3.1",
+    "datasheet": "^0.4.2",
     "riscv-v-spec": "github:riscv/riscv-v-spec"
   }
 }
