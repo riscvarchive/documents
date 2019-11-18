@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en-US">
   <head>
+    <meta charset="utf-8">
     <title>undefined</title>
 <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans" rel="stylesheet">
@@ -123,7 +124,7 @@ body {
   hyphens: auto;
 }
 .note {
-  font-size: 0.8em;
+  font-size: 0.875em;
   padding: 2px;
 }
 .icon .title {
@@ -223,7 +224,7 @@ h2 {
     color: #000;
   }
   body {
-    font-size: 20px;
+    font-size: 14pt;
   }
 
   h1 {
@@ -231,13 +232,20 @@ h2 {
   }
 
   @page {
-    @top-center { content: "top-center"; border: solid green; }
-    @bottom-center { content: "bottom-center"; border: solid green; }
+    @top-center {
+      content: "top-center"; border: solid green;
+    }
   }
+
+  @page {
+    @bottom-center {
+      content: "bottom-center"; border: solid green;
+    }
+  }
+
   @page {
     margin-top: 15mm;
     margin-bottom: 15mm;
-    border: solid green;
   }
   @page :left {
     margin-left: 25mm;
@@ -261,7 +269,7 @@ h2 {
     page-break-after: avoid-page;
   }
   pre {
-    font-size: 18px;
+    font-size: 12pt;
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -291,7 +299,7 @@ h2 {
 
 <div class="ftitle">
 <div class="ftitle1">RISC-V "V" Vector Extension</div>
-<div class="ftitle2">Version 0.8-draft-20191004</div>
+<div class="ftitle2">Version 0.8-draft-20191117</div>
 </div>
 
       <div id="content">
@@ -305,11 +313,12 @@ h2 {
 <li><a href="#_vector_registers">3.1. Vector Registers</a></li>
 <li><a href="#_vector_type_register_vtype">3.2. Vector type register, <code>vtype</code></a></li>
 <li><a href="#_vector_length_register_vl">3.3. Vector Length Register <code>vl</code></a></li>
-<li><a href="#_vector_start_index_csr_vstart">3.4. Vector Start Index CSR <code>vstart</code></a></li>
-<li><a href="#_vector_fixed_point_rounding_mode_register_vxrm">3.5. Vector Fixed-Point Rounding Mode Register <code>vxrm</code></a></li>
-<li><a href="#_vector_fixed_point_saturation_flag_vxsat">3.6. Vector Fixed-Point Saturation Flag <code>vxsat</code></a></li>
-<li><a href="#_vector_fixed_point_fields_in_fcsr">3.7. Vector Fixed-Point Fields in <code>fcsr</code></a></li>
-<li><a href="#_state_of_vector_extension_at_reset">3.8. State of Vector Extension at Reset</a></li>
+<li><a href="#_vector_byte_length_vlenb">3.4. Vector Byte Length <code>vlenb</code></a></li>
+<li><a href="#_vector_start_index_csr_vstart">3.5. Vector Start Index CSR <code>vstart</code></a></li>
+<li><a href="#_vector_fixed_point_rounding_mode_register_vxrm">3.6. Vector Fixed-Point Rounding Mode Register <code>vxrm</code></a></li>
+<li><a href="#_vector_fixed_point_saturation_flag_vxsat">3.7. Vector Fixed-Point Saturation Flag <code>vxsat</code></a></li>
+<li><a href="#_vector_fixed_point_fields_in_fcsr">3.8. Vector Fixed-Point Fields in <code>fcsr</code></a></li>
+<li><a href="#_state_of_vector_extension_at_reset">3.9. State of Vector Extension at Reset</a></li>
 </ul>
 </li>
 <li><a href="#_mapping_of_vector_elements_to_vector_register_state">4. Mapping of Vector Elements to Vector Register State</a>
@@ -346,6 +355,7 @@ h2 {
 <li><a href="#_vector_indexed_instructions">7.6. Vector Indexed Instructions</a></li>
 <li><a href="#_unit_stride_fault_only_first_loads">7.7. Unit-stride Fault-Only-First Loads</a></li>
 <li><a href="#sec-aos">7.8. Vector Load/Store Segment Instructions (<code>Zvlsseg</code>)</a></li>
+<li><a href="#_vector_loadstore_whole_register_instructions">7.9. Vector Load/Store Whole Register Instructions</a></li>
 </ul>
 </li>
 <li><a href="#_vector_amo_operations_zvamo">8. Vector AMO Operations (<code>Zvamo</code>)</a></li>
@@ -373,8 +383,9 @@ h2 {
 <li><a href="#_vector_widening_integer_multiply_instructions">12.11. Vector Widening Integer Multiply Instructions</a></li>
 <li><a href="#_vector_single_width_integer_multiply_add_instructions">12.12. Vector Single-Width Integer Multiply-Add Instructions</a></li>
 <li><a href="#_vector_widening_integer_multiply_add_instructions">12.13. Vector Widening Integer Multiply-Add Instructions</a></li>
-<li><a href="#_vector_integer_merge_instructions">12.14. Vector Integer Merge Instructions</a></li>
-<li><a href="#_vector_integer_move_instructions">12.15. Vector Integer Move Instructions</a></li>
+<li><a href="#_vector_quad_widening_integer_multiply_add_instructions">12.14. Vector Quad-Widening Integer Multiply-Add Instructions</a></li>
+<li><a href="#_vector_integer_merge_instructions">12.15. Vector Integer Merge Instructions</a></li>
+<li><a href="#_vector_integer_move_instructions">12.16. Vector Integer Move Instructions</a></li>
 </ul>
 </li>
 <li><a href="#_vector_fixed_point_arithmetic_instructions">13. Vector Fixed-Point Arithmetic Instructions</a>
@@ -435,6 +446,7 @@ h2 {
 <li><a href="#_vector_slide_instructions">17.3. Vector Slide Instructions</a></li>
 <li><a href="#_vector_register_gather_instruction">17.4. Vector Register Gather Instruction</a></li>
 <li><a href="#_vector_compress_instruction">17.5. Vector Compress Instruction</a></li>
+<li><a href="#_whole_vector_register_move">17.6. Whole Vector Register Move</a></li>
 </ul>
 </li>
 <li><a href="#_exception_handling">18. Exception Handling</a>
@@ -629,8 +641,8 @@ or SLEN parameters.
 <h2 id="_vector_extension_programmers_model">3. Vector Extension Programmer&#8217;s Model</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The vector extension adds 32 vector registers, and five unprivileged
-CSRs (<code>vstart</code>, <code>vxsat</code>, <code>vxrm</code>, <code>vtype</code>, <code>vl</code>) to a base scalar
+<p>The vector extension adds 32 vector registers, and six unprivileged
+CSRs (<code>vstart</code>, <code>vxsat</code>, <code>vxrm</code>, <code>vtype</code>, <code>vl</code>, <code>vlenb</code>) to a base scalar
 RISC-V ISA.  If the base scalar ISA does not include floating-point,
 then a <code>fcsr</code> register is also added to hold mirrors of the <code>vxsat</code>
 and <code>vxrm</code> CSRs as explained below.</p>
@@ -681,6 +693,12 @@ and <code>vxrm</code> CSRs as explained below.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">URO</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">vtype</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Vector data type register</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0xC22</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">URO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vlenb</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VLEN/8 (vector register length in bytes)</p></td>
 </tr>
 </tbody>
 </table>
@@ -1139,7 +1157,41 @@ SEW=8 results in VLMAX of 32).
 </div>
 </div>
 <div class="sect2">
-<h3 id="_vector_start_index_csr_vstart">3.4. Vector Start Index CSR <code>vstart</code></h3>
+<h3 id="_vector_byte_length_vlenb">3.4. Vector Byte Length <code>vlenb</code></h3>
+<div class="paragraph">
+<p>The <em>XLEN</em>-bit-wide read-only CSR <code>vlenb</code> holds the value VLEN/8,
+i.e., the vector register length in bytes.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The value in <code>vlenb</code> is a design-time constant in any
+implementation.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Without this CSR, several instructions are needed to calculate
+VLEN in bytes.  The code has to disturb current <code>vl</code> and <code>vtype</code>
+settings which require them to be saved and restored.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vector_start_index_csr_vstart">3.5. Vector Start Index CSR <code>vstart</code></h3>
 <div class="paragraph">
 <p>The <code>vstart</code> read-write CSR specifies the index of the first element
 to be executed by a vector instruction.</p>
@@ -1232,7 +1284,7 @@ a vector arithmetic instruction when <code>vstart</code> is nonzero.
 </div>
 </div>
 <div class="sect2">
-<h3 id="_vector_fixed_point_rounding_mode_register_vxrm">3.5. Vector Fixed-Point Rounding Mode Register <code>vxrm</code></h3>
+<h3 id="_vector_fixed_point_rounding_mode_register_vxrm">3.6. Vector Fixed-Point Rounding Mode Register <code>vxrm</code></h3>
 <div class="paragraph">
 <p>The vector fixed-point rounding-mode register holds a two-bit
 read-write rounding-mode field.  The vector fixed-point rounding-mode
@@ -1324,7 +1376,7 @@ The rounding mode can be set with a single <code>csrwi</code> instruction.
 </div>
 </div>
 <div class="sect2">
-<h3 id="_vector_fixed_point_saturation_flag_vxsat">3.6. Vector Fixed-Point Saturation Flag <code>vxsat</code></h3>
+<h3 id="_vector_fixed_point_saturation_flag_vxsat">3.7. Vector Fixed-Point Saturation Flag <code>vxsat</code></h3>
 <div class="paragraph">
 <p>The <code>vxsat</code> CSR holds a single read-write bit that indicates if a
 fixed-point instruction has had to saturate an output value to fit
@@ -1335,7 +1387,7 @@ into a destination format.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_vector_fixed_point_fields_in_fcsr">3.7. Vector Fixed-Point Fields in <code>fcsr</code></h3>
+<h3 id="_vector_fixed_point_fields_in_fcsr">3.8. Vector Fixed-Point Fields in <code>fcsr</code></h3>
 <div class="paragraph">
 <p>The <code>vxrm</code> and <code>vxsat</code> separate CSRs can also be accessed via fields
 in the floating-point CSR, <code>fcsr</code>.  The <code>fcsr</code> register must be added
@@ -1393,7 +1445,7 @@ faster.
 </div>
 </div>
 <div class="sect2">
-<h3 id="_state_of_vector_extension_at_reset">3.8. State of Vector Extension at Reset</h3>
+<h3 id="_state_of_vector_extension_at_reset">3.9. State of Vector Extension at Reset</h3>
 <div class="paragraph">
 <p>The vector extension must have a consistent state at reset.  In
 particular, <code>vtype</code> and <code>vl</code> must have values that can be read and
@@ -3001,11 +3053,27 @@ instruction encodings respectively.</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reserved, x !=0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">unit-stride, whole registers</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">reserved, x!=0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reserved, x !=0</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
@@ -3052,11 +3120,27 @@ instruction encodings respectively.</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reserved, x !=0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">unit-stride, whole registers</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">reserved, x!=0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reserved, x !=0</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
@@ -3090,6 +3174,10 @@ add more powerful primitives to move items to and from memory.
 </td>
 </tr>
 </table>
+</div>
+<div class="paragraph">
+<p>The <code>nf[2:0]</code> field also encodes the number of whole vector registers
+to transfer for the whole vector register load/store instructions.</p>
 </div>
 </div>
 <div class="sect2">
@@ -3726,6 +3814,101 @@ that raise exceptions partway through loading a structure.
 <div class="paragraph">
 <p>Only ordered indexed segment stores are provided. The segments must
 appear to be written in element order.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vector_loadstore_whole_register_instructions">7.9. Vector Load/Store Whole Register Instructions</h3>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+These instructions are still under early consideration for inclusion.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>These instructions load and store whole vector registers (i.e., VLEN
+bits), ignoring the settings in the <code>vl</code> and <code>vtype</code> registers.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+These instructions are intended to be used to save and restore
+vector registers when the type and length of the current contents of
+the vector register is not known, or where modifying <code>vl</code> and <code>vtype</code>
+would be costly. Examples include compiler register spills, vector
+function calls where values are passed in vector registers, interrupt
+handlers, and OS context switches.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Format for Vector Load Whole Register Instructions under LOAD-FP major opcode
+31 29 28 26  25  24      20 19       15 14   12 11      7 6     0
+ nf  | 000 | 1 |   01000   |    rs1    |  111  |    vd   |0000111| VL&lt;nf&gt;R
+
+Format for Vector Store Whole Register Instructions under STORE-FP major opcode
+31 29 28 26  25  24      20 19       15 14   12 11      7 6     0
+ nf  | 000 | 1 |   01000   |    rs1    |  111  |   vs3   |0100111| VS&lt;nf&gt;R</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The vector whole register load instructions are encoded similar
+to unmasked zero-extended unit-stride loads of elements, with the <code>nf</code>
+field encoding how many vector registers to load and store.  The
+vector whole register store instructions are encoded similar to
+unmasked unit-stride store of elements.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The instructions operate similarly to unmasked unit-stride load and
+store instructions of elements, with the base address passed in the
+scalar <code>x</code> register specified by <code>rs1</code>.  The base address must be
+naturally aligned to ELEN/8 bytes, else a misaligned load or store
+exception may be raised.</p>
+</div>
+<div class="paragraph">
+<p>The instructions transfer one or more vector registers as indicated by
+the setting of the <code>nf</code> field in the instruction.  The base vector
+register number is specified by <code>vd</code> for loads and <code>vs3</code> for stores.
+The <code>nf</code> field encodes the number of vector registers to transfer,
+numbered successively after the base.  The base register plus the <code>nf</code>
+value cannot exceed 31, else an illegal instruction exception is
+raised.</p>
+</div>
+<div class="paragraph">
+<p>When multiple registers are transferred, the vector register contents
+are mapped to contiguous bytes in memory, with the lowest-numbered
+vector register held in the lowest-numbered memory addresses.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>   # Format
+   vl&lt;nf&gt;r.v vd, (rs1)  # Vector load of nf vector registers
+   vl1r.v v3, (a0)      # Load v3 with VLEN/8 bytes held at address in a0
+   vl3r.v v3, (a0)      # Load v3,v4,v5 with 3*VLEN/8 bytes at address in a0
+
+   vl&lt;nf&gt;r.v vd, (rs1)  # Vector store of nf vector registers
+   vs3r.v v3, (a1)      # Store v3,v4,v5 (3*VLEN/8 bytes) to address in a1</pre>
 </div>
 </div>
 </div>
@@ -5331,7 +5514,62 @@ vwmaccus.vx vd, rs1, vs2, vm    # vd[i] = +(unsigned(x[rs1]) * signed(vs2[i])) +
 </div>
 </div>
 <div class="sect2">
-<h3 id="_vector_integer_merge_instructions">12.14. Vector Integer Merge Instructions</h3>
+<h3 id="_vector_quad_widening_integer_multiply_add_instructions">12.14. Vector Quad-Widening Integer Multiply-Add Instructions</h3>
+<div class="paragraph">
+<p>The quad-widening integer multiply-add instructions add a SEW-bit*SEW-bit
+multiply result to (from) a 4*SEW-bit value and produce a 4*SEW-bit
+result.  All combinations of signed and unsigned multiply operands are
+supported.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+It is currently unclear if quad-widening will be part of
+standard base, or part of an extension.  Quad-widening would add a new
+operand access pattern to the standard.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+On ELEN=32 machines, only 8b * 8b = 16b products accumulated in
+a 32b accumulator would be supported.  Machines with ELEN=64 would
+also add 16b * 16b = 32b products accumulated in 64b.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># Quad-widening unsigned-integer multiply-add, overwrite addend
+vqmaccu.vv vd, vs1, vs2, vm    # vd[i] = +(vs1[i] * vs2[i]) + vd[i]
+vqmaccu.vx vd, rs1, vs2, vm    # vd[i] = +(x[rs1] * vs2[i]) + vd[i]
+
+# Quad-widening signed-integer multiply-add, overwrite addend
+vqmacc.vv vd, vs1, vs2, vm    # vd[i] = +(vs1[i] * vs2[i]) + vd[i]
+vqmacc.vx vd, rs1, vs2, vm    # vd[i] = +(x[rs1] * vs2[i]) + vd[i]
+
+# Quad-widening signed-unsigned-integer multiply-add, overwrite addend
+vqmaccsu.vv vd, vs1, vs2, vm    # vd[i] = +(signed(vs1[i]) * unsigned(vs2[i])) + vd[i]
+vqmaccsu.vx vd, rs1, vs2, vm    # vd[i] = +(signed(x[rs1]) * unsigned(vs2[i])) + vd[i]
+
+# Quad-widening unsigned-signed-integer multiply-add, overwrite addend
+vqmaccus.vx vd, rs1, vs2, vm    # vd[i] = +(unsigned(x[rs1]) * signed(vs2[i])) + vd[i]</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vector_integer_merge_instructions">12.15. Vector Integer Merge Instructions</h3>
 <div class="paragraph">
 <p>The vector integer merge instructions combine two source operands
 based on the mask field.  Unlike regular arithmetic instructions, the
@@ -5358,7 +5596,7 @@ vmerge.vim vd, vs2, imm, v0  # vd[i] = v0[i].LSB ? imm    : vs2[i]</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_vector_integer_move_instructions">12.15. Vector Integer Move Instructions</h3>
+<h3 id="_vector_integer_move_instructions">12.16. Vector Integer Move Instructions</h3>
 <div class="paragraph">
 <p>The vector integer move instructions copy a source operand to a vector
 register group.  These instructions are always unmasked (<code>vm=1</code>).
@@ -7572,6 +7810,79 @@ element 0.  This does mean elements in destination register after
 </table>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_whole_vector_register_move">17.6. Whole Vector Register Move</h3>
+<div class="paragraph">
+<p>The <code>vmv&lt;nf&gt;r.v</code> instructions copy whole vector registers (i.e., all
+VLEN bits) ignoring the current settings of the <code>vl</code> and <code>vtype</code>
+register.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+These instructions are intended to aid compilers to shuffle
+vector registers without needing to know or change <code>vl</code> or <code>vtype</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The instruction is encoded as an OPIVI instruction.  The number of
+vector registers to copy is encoded in the low three bits of the
+<code>simm</code> field using the same encoding as the <code>nf</code> field for memory
+instructions. The upper two bits of <code>simm</code> field must be zero.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The instruction uses the same funct6 encoding as the <code>vsmul</code>
+instruction but with an immediate operand, and only the unmasked
+version (<code>vm=1</code>).  This encoding is chosen as it is close to the
+related <code>vmerge</code> encoding, and it is unlikely the <code>vsmul</code> instruction
+would benefit from an immediate form.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>    vmv&lt;nf&gt;r.v vd, vs2  # General form
+
+    vmv1r.v v1, v2   #  Copy v1=v2
+    vmv3r.v v5, v9   #  Copy v5=v9; v6=v10; v7=v11</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The source and destination vector register groups cannot overlap if
+the register number in <code>vd</code> is greater than <code>vs2</code>, otherwise an
+illegal instruction exception will be raised.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+If <code>vd</code> is equal to <code>vs2</code> the instruction is a NOP.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The sum of <code>vd</code> and <code>nf</code> and the sum of <code>vs2</code> and <code>nf</code> must both be
+less than 32 (i.e., no wraparound of register addressing), else an
+illegal instruction exception is raised.</p>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -9085,6 +9396,21 @@ vfdot.vv v1, v2, v3
 <td class="tableblock halign-left valign-top"><p class="tableblock">vfrsub</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vmv&lt;nf&gt;r</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">101000</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
@@ -9412,10 +9738,10 @@ vfdot.vv v1, v2, v3
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vqmaccu</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111100</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
@@ -9427,10 +9753,10 @@ vfdot.vv v1, v2, v3
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111101</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vqmacc</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111101</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
@@ -9443,9 +9769,9 @@ vfdot.vv v1, v2, v3
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111110</p></td>
 <td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vqmaccus</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111110</p></td>
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
@@ -9457,10 +9783,10 @@ vfdot.vv v1, v2, v3
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111111</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
 <td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vqmaccsu</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">111111</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">V</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">X</p></td>
@@ -10365,11 +10691,6 @@ module.exports = render;
 
 const renderAll = require('./render-all');
 
-window.matchMedia('print').addListener(e => {
-  console.log('mql');
-  console.log(e);
-});
-
 document.addEventListener('DOMContentLoaded', () => {
   renderAll();
 });
@@ -10385,40 +10706,55 @@ const riscvasm = require('../lib/riscvasm.js');
 const cpp = require('highlight.js/lib/languages/cpp.js');
 const wavedrom = require('wavedrom');
 const vreg = require('./vreg.js');
+// const pagedjs = require('pagedjs');
 
 hljs.registerLanguage('riscvasm', riscvasm);
 hljs.registerLanguage('cpp', cpp);
 
-module.exports = () => document.querySelectorAll('pre code').forEach(block => {
-  const lang = block.getAttribute('data-lang');
-  if (lang === 'datasheet') {
-    const source = eval('(' + block.innerHTML + ')');
+// const paged = new pagedjs.Previewer();
 
-    const newNode = document.createElement('div');
-    const parent = block.parentNode;
-    const grandparent = parent.parentNode;
-    grandparent.replaceChild(newNode, parent);
+module.exports = () => {
 
-    if (source.isa !== undefined) {
-      const s = {
-        reg: source.isa,
-        config: Object.assign(source.config || {}, {lanes: 1, hspace: ((980 - 8) >> 5) << 5})
-      };
-      wavedrom.renderWaveElement(0, s, newNode, wavedrom.waveSkin.default);
-    } else
-    if (source.vreg !== undefined) {
-      newNode.innerHTML = vreg(source.vreg);
+  // window.matchMedia('print').addListener(() => {
+  //   document.querySelectorAll('h2,h3').forEach(block => {
+  //     const rect = block.getClientRects();
+  //     // const page = rect.top; // ) / 92862.015625 / 87;
+  //     // console.log(page);
+  //     // console.log(JSON.stringify(rect[0].top / (92862.015625 / 85)));
+  //   });
+  // });
+
+  document.querySelectorAll('pre code').forEach(block => {
+    const lang = block.getAttribute('data-lang');
+    if (lang === 'wavedrom') {
+      const source = eval('(' + block.innerHTML + ')');
+
+      const newNode = document.createElement('div');
+      const parent = block.parentNode;
+      const grandparent = parent.parentNode;
+      grandparent.replaceChild(newNode, parent);
+
+      if (source.reg !== undefined) {
+        const s = {
+          reg: source.reg,
+          config: Object.assign(source.config || {}, {lanes: 1, hspace: ((980 - 8) >> 5) << 5})
+        };
+        wavedrom.renderWaveElement(0, s, newNode, wavedrom.waveSkin.default);
+      } else
+      if (source.vreg !== undefined) {
+        newNode.innerHTML = vreg(source.vreg);
+      } else {
+        return;
+      }
     } else {
-      return;
+      hljs.highlightBlock(block);
     }
-  } else {
-    hljs.highlightBlock(block);
-  }
-});
+  });
+};
 
 /* eslint-env browser */
 
-},{"../lib/riscvasm.js":4,"./vreg.js":5,"highlight.js/lib/highlight":6,"highlight.js/lib/languages/cpp.js":7,"wavedrom":21}],4:[function(require,module,exports){
+},{"../lib/riscvasm.js":4,"./vreg.js":5,"highlight.js/lib/highlight":6,"highlight.js/lib/languages/cpp.js":7,"wavedrom":23}],4:[function(require,module,exports){
 'use strict';
 
 module.exports = function(hljs) {
@@ -12306,28 +12642,31 @@ function isObject (o) {
     return o && Object.prototype.toString.call(o) === '[object Object]';
 }
 
-function indent (txt) {
-    var arr, res = [];
+function indenter (indentation) {
+    var space = ' '.repeat(indentation);
+    return function (txt) {
+        var arr, res = [];
 
-    if (typeof txt !== 'string') {
-        return txt;
-    }
-
-    arr = txt.split('\n');
-
-    if (arr.length === 1) {
-        return '  ' + txt;
-    }
-
-    arr.forEach(function (e) {
-        if (e.trim() === '') {
-            res.push(e);
-            return;
+        if (typeof txt !== 'string') {
+            return txt;
         }
-        res.push('  ' + e);
-    });
 
-    return res.join('\n');
+        arr = txt.split('\n');
+
+        if (arr.length === 1) {
+            return space + txt;
+        }
+
+        arr.forEach(function (e) {
+            if (e.trim() === '') {
+                res.push(e);
+                return;
+            }
+            res.push(space + e);
+        });
+
+        return res.join('\n');
+    };
 }
 
 function clean (txt) {
@@ -12342,56 +12681,70 @@ function clean (txt) {
     return res.join('\n');
 }
 
-function stringify (a) {
-    var res, body, isEmpty, isFlat;
+function stringify (a, indentation) {
 
-    body = '';
-    isFlat = true;
-    isEmpty = a.some(function (e, i, arr) {
-        if (i === 0) {
-            res = '<' + e;
-            if (arr.length === 1) {
-                return true;
-            }
-            return;
-        }
+    var cr = '';
+    var indent = function (t) { return t; };
 
-        if (i === 1) {
-            if (isObject(e)) {
-                Object.keys(e).forEach(function (key) {
-                    res += ' ' + key + '="' + e[key] + '"';
-                });
-                if (arr.length === 2) {
+    if (indentation > 0) {
+        cr = '\n';
+        indent = indenter(indentation);
+    }
+
+    function rec (a) {
+        var res, body, isEmpty, isFlat;
+
+        body = '';
+        isFlat = true;
+        isEmpty = a.some(function (e, i, arr) {
+            if (i === 0) {
+                res = '<' + e;
+                if (arr.length === 1) {
                     return true;
                 }
-                res += '>';
                 return;
+            }
+
+            if (i === 1) {
+                if (isObject(e)) {
+                    Object.keys(e).forEach(function (key) {
+                        res += ' ' + key + '="' + e[key] + '"';
+                    });
+                    if (arr.length === 2) {
+                        return true;
+                    }
+                    res += '>';
+                    return;
+                } else {
+                    res += '>';
+                }
+            }
+
+            switch (typeof e) {
+            case 'string':
+            case 'number':
+            case 'boolean':
+            case 'undefined':
+                body += e + cr;
+                return;
+            }
+
+            isFlat = false;
+            body += rec(e);
+        });
+
+        if (isEmpty) {
+            return res + '/>' + cr; // short form
+        } else {
+            if (isFlat) {
+                return res + clean(body) + '</' + a[0] + '>' + cr;
             } else {
-                res += '>';
+                return res + cr + indent(body) + '</' + a[0] + '>' + cr;
             }
         }
-
-        switch (typeof e) {
-        case 'string':
-        case 'number':
-        case 'boolean':
-            body += e + '\n';
-            return;
-        }
-
-        isFlat = false;
-        body += stringify(e);
-    });
-
-    if (isEmpty) {
-        return res + '/>\n'; // short form
-    } else {
-        if (isFlat) {
-            return res + clean(body) + '</' + a[0] + '>\n';
-        } else {
-            return res + '\n' + indent(body) + '</' + a[0] + '>\n';
-        }
     }
+
+    return rec(a);
 }
 
 module.exports = stringify;
@@ -12683,8 +13036,127 @@ module.exports = appendSaveAsDialog;
 },{}],14:[function(require,module,exports){
 'use strict';
 
-var // obj2ml = require('./obj2ml'),
-    jsonmlParse = require('./jsonml-parse');
+function arcShape (Edge, from, to) { /* eslint complexity: [warn, 30] */
+    var dx = to.x - from.x;
+    var dy = to.y - from.y;
+    var lx = ((from.x + to.x) / 2);
+    var ly = ((from.y + to.y) / 2);
+    var d;
+    var style;
+    switch (Edge.shape) {
+    case '-'  : {
+        break;
+    }
+    case '~'  : {
+        d = ('M ' + from.x + ',' + from.y + ' c ' + (0.7 * dx) + ', 0 ' + (0.3 * dx) + ', ' + dy + ' ' + dx + ', ' + dy);
+        break;
+    }
+    case '-~' : {
+        d = ('M ' + from.x + ',' + from.y + ' c ' + (0.7 * dx) + ', 0 ' +         dx + ', ' + dy + ' ' + dx + ', ' + dy);
+        if (Edge.label) { lx = (from.x + (to.x - from.x) * 0.75); }
+        break;
+    }
+    case '~-' : {
+        d = ('M ' + from.x + ',' + from.y + ' c ' + 0          + ', 0 ' + (0.3 * dx) + ', ' + dy + ' ' + dx + ', ' + dy);
+        if (Edge.label) { lx = (from.x + (to.x - from.x) * 0.25); }
+        break;
+    }
+    case '-|' : {
+        d = ('m ' + from.x + ',' + from.y + ' ' + dx + ',0 0,' + dy);
+        if (Edge.label) { lx = to.x; }
+        break;
+    }
+    case '|-' : {
+        d = ('m ' + from.x + ',' + from.y + ' 0,' + dy + ' ' + dx + ',0');
+        if (Edge.label) { lx = from.x; }
+        break;
+    }
+    case '-|-': {
+        d = ('m ' + from.x + ',' + from.y + ' ' + (dx / 2) + ',0 0,' + dy + ' ' + (dx / 2) + ',0');
+        break;
+    }
+    case '->' : {
+        style = ('marker-end:url(#arrowhead);stroke:#0041c4;stroke-width:1;fill:none');
+        break;
+    }
+    case '~>' : {
+        style = ('marker-end:url(#arrowhead);stroke:#0041c4;stroke-width:1;fill:none');
+        d = ('M ' + from.x + ',' + from.y + ' ' + 'c ' + (0.7 * dx) + ', 0 ' + 0.3 * dx + ', ' + dy + ' ' + dx + ', ' + dy);
+        break;
+    }
+    case '-~>': {
+        style = ('marker-end:url(#arrowhead);stroke:#0041c4;stroke-width:1;fill:none');
+        d = ('M ' + from.x + ',' + from.y + ' ' + 'c ' + (0.7 * dx) + ', 0 ' +     dx + ', ' + dy + ' ' + dx + ', ' + dy);
+        if (Edge.label) { lx = (from.x + (to.x - from.x) * 0.75); }
+        break;
+    }
+    case '~->': {
+        style = ('marker-end:url(#arrowhead);stroke:#0041c4;stroke-width:1;fill:none');
+        d = ('M ' + from.x + ',' + from.y + ' ' + 'c ' + 0      + ', 0 ' + (0.3 * dx) + ', ' + dy + ' ' + dx + ', ' + dy);
+        if (Edge.label) { lx = (from.x + (to.x - from.x) * 0.25); }
+        break;
+    }
+    case '-|>' : {
+        style = ('marker-end:url(#arrowhead);stroke:#0041c4;stroke-width:1;fill:none');
+        d = ('m ' + from.x + ',' + from.y + ' ' + dx + ',0 0,' + dy);
+        if (Edge.label) { lx = to.x; }
+        break;
+    }
+    case '|->' : {
+        style = ('marker-end:url(#arrowhead);stroke:#0041c4;stroke-width:1;fill:none');
+        d = ('m ' + from.x + ',' + from.y + ' 0,' + dy + ' ' + dx + ',0');
+        if (Edge.label) { lx = from.x; }
+        break;
+    }
+    case '-|->': {
+        style = ('marker-end:url(#arrowhead);stroke:#0041c4;stroke-width:1;fill:none');
+        d = ('m ' + from.x + ',' + from.y + ' ' + (dx / 2) + ',0 0,' + dy + ' ' + (dx / 2) + ',0');
+        break;
+    }
+    case '<->' : {
+        style = ('marker-end:url(#arrowhead);marker-start:url(#arrowtail);stroke:#0041c4;stroke-width:1;fill:none');
+        break;
+    }
+    case '<~>' : {
+        style = ('marker-end:url(#arrowhead);marker-start:url(#arrowtail);stroke:#0041c4;stroke-width:1;fill:none');
+        d = ('M ' + from.x + ',' + from.y + ' ' + 'c ' + (0.7 * dx) + ', 0 ' + (0.3 * dx) + ', ' + dy + ' ' + dx + ', ' + dy);
+        break;
+    }
+    case '<-~>': {
+        style = ('marker-end:url(#arrowhead);marker-start:url(#arrowtail);stroke:#0041c4;stroke-width:1;fill:none');
+        d = ('M ' + from.x + ',' + from.y + ' ' + 'c ' + (0.7 * dx) + ', 0 ' +     dx + ', ' + dy + ' ' + dx + ', ' + dy);
+        if (Edge.label) { lx = (from.x + (to.x - from.x) * 0.75); }
+        break;
+    }
+    case '<-|>' : {
+        style = ('marker-end:url(#arrowhead);marker-start:url(#arrowtail);stroke:#0041c4;stroke-width:1;fill:none');
+        d = ('m ' + from.x + ',' + from.y + ' ' + dx + ',0 0,' + dy);
+        if (Edge.label) { lx = to.x; }
+        break;
+    }
+    case '<-|->': {
+        style = ('marker-end:url(#arrowhead);marker-start:url(#arrowtail);stroke:#0041c4;stroke-width:1;fill:none');
+        d = ('m ' + from.x + ',' + from.y + ' ' + (dx / 2) + ',0 0,' + dy + ' ' + (dx / 2) + ',0');
+        break;
+    }
+    default   : { style = ('fill:none;stroke:#F00;stroke-width:1'); }
+    }
+    return {
+        lx: lx,
+        ly: ly,
+        d: d,
+        style: style
+    };
+}
+
+module.exports = arcShape;
+
+},{}],15:[function(require,module,exports){
+module.exports={"chars":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,34,47,74,74,118,89,25,44,44,52,78,37,44,37,37,74,74,74,74,74,74,74,74,74,74,37,37,78,78,78,74,135,89,89,96,96,89,81,103,96,37,67,89,74,109,96,103,89,103,96,89,81,96,89,127,89,87,81,37,37,37,61,74,44,74,74,67,74,74,37,74,74,30,30,67,30,112,74,74,74,74,44,67,37,74,67,95,66,65,67,44,34,44,78,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,37,43,74,74,74,74,34,74,44,98,49,74,78,0,98,73,53,73,44,44,44,77,71,37,44,44,49,74,111,111,111,81,89,89,89,89,89,89,133,96,89,89,89,89,37,37,37,37,96,96,103,103,103,103,103,78,103,96,96,96,96,87,89,81,74,74,74,74,74,74,118,67,74,74,74,74,36,36,36,36,74,74,74,74,74,74,74,73,81,74,74,74,74,65,74,65,89,74,89,74,89,74,96,67,96,67,96,67,96,67,96,82,96,74,89,74,89,74,89,74,89,74,89,74,103,74,103,74,103,74,103,74,96,74,96,74,37,36,37,36,37,36,37,30,37,36,98,59,67,30,89,67,67,74,30,74,30,74,39,74,44,74,30,96,74,96,74,96,74,80,96,74,103,74,103,74,103,74,133,126,96,44,96,44,96,44,89,67,89,67,89,67,89,67,81,38,81,50,81,37,96,74,96,74,96,74,96,74,96,74,96,74,127,95,87,65,87,81,67,81,67,81,67,30,84,97,91,84,91,84,94,92,73,104,109,91,84,81,84,100,82,76,74,103,91,131,47,40,99,77,37,79,130,100,84,104,114,87,126,101,87,84,93,84,69,84,46,52,82,52,82,114,89,102,96,100,98,91,70,88,88,77,70,85,89,77,67,84,39,65,61,39,189,173,153,111,105,61,123,123,106,89,74,37,30,103,74,96,74,96,74,96,74,96,74,96,74,81,91,81,91,81,130,131,102,84,103,84,87,78,104,81,104,81,88,76,37,189,173,153,103,84,148,90,100,84,89,74,133,118,103,81],"other":114}
+
+},{}],16:[function(require,module,exports){
+'use strict';
+
 
 // function createElement (obj) {
 //     var el;
@@ -12694,10 +13166,21 @@ var // obj2ml = require('./obj2ml'),
 //     return el.firstChild;
 // }
 
+// var jsonmlParse = require('./jsonml-parse');
+
+var onmlStringify = require('onml/lib/stringify.js');
+var w3 = require('./w3.js');
+
+function jsonmlParse (arr) {
+    var el = document.createElementNS(w3.svg, 'g');
+    el.innerHTML = onmlStringify(arr);
+    return el.childNodes[0];
+}
+
 module.exports = jsonmlParse;
 // module.exports = createElement;
 
-},{"./jsonml-parse":27}],15:[function(require,module,exports){
+},{"./w3.js":46,"onml/lib/stringify.js":9}],17:[function(require,module,exports){
 'use strict';
 
 var eva = require('./eva'),
@@ -12732,7 +13215,7 @@ function editorRefresh () {
 
 module.exports = editorRefresh;
 
-},{"./eva":16,"./render-wave-form":42}],16:[function(require,module,exports){
+},{"./eva":18,"./render-wave-form":43}],18:[function(require,module,exports){
 'use strict';
 
 function eva (id) {
@@ -12773,7 +13256,7 @@ function eva (id) {
 
 module.exports = eva;
 
-},{}],17:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 'use strict';
 
 function findLaneMarkers (lanetext) {
@@ -12786,7 +13269,11 @@ function findLaneMarkers (lanetext) {
             (e === 'vvv-2') ||
             (e === 'vvv-3') ||
             (e === 'vvv-4') ||
-            (e === 'vvv-5')
+            (e === 'vvv-5') ||
+            (e === 'vvv-6') ||
+            (e === 'vvv-7') ||
+            (e === 'vvv-8') ||
+            (e === 'vvv-9')
         ) {
             lcount += 1;
         } else {
@@ -12808,7 +13295,7 @@ function findLaneMarkers (lanetext) {
 
 module.exports = findLaneMarkers;
 
-},{}],18:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 'use strict';
 
 function genBrick (texts, extra, times) {
@@ -12839,7 +13326,7 @@ function genBrick (texts, extra, times) {
 
 module.exports = genBrick;
 
-},{}],19:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 'use strict';
 
 var genBrick = require('./gen-brick');
@@ -12864,6 +13351,10 @@ function genFirstWaveBrick (text, extra, times) {
     case '3': tmp = genBrick(['vvv-3'], extra, times); break;
     case '4': tmp = genBrick(['vvv-4'], extra, times); break;
     case '5': tmp = genBrick(['vvv-5'], extra, times); break;
+    case '6': tmp = genBrick(['vvv-6'], extra, times); break;
+    case '7': tmp = genBrick(['vvv-7'], extra, times); break;
+    case '8': tmp = genBrick(['vvv-8'], extra, times); break;
+    case '9': tmp = genBrick(['vvv-9'], extra, times); break;
     case 'd': tmp = genBrick(['ddd'], extra, times); break;
     case 'u': tmp = genBrick(['uuu'], extra, times); break;
     case 'z': tmp = genBrick(['zzz'], extra, times); break;
@@ -12874,7 +13365,7 @@ function genFirstWaveBrick (text, extra, times) {
 
 module.exports = genFirstWaveBrick;
 
-},{"./gen-brick":18}],20:[function(require,module,exports){
+},{"./gen-brick":20}],22:[function(require,module,exports){
 'use strict';
 
 var genBrick = require('./gen-brick');
@@ -12890,7 +13381,7 @@ function genWaveBrick (text, extra, times) {
         'd':'d',
         'u':'u',
         'z':'z',
-        '=':'v',  '2':'v',  '3':'v',  '4':'v', '5':'v'
+        '=':'v',  '2':'v',  '3':'v',  '4':'v', '5':'v', '6':'v', '7':'v', '8':'v', '9':'v'
     };
 
     x3 = {
@@ -12899,7 +13390,7 @@ function genWaveBrick (text, extra, times) {
         'd': '',
         'u': '',
         'z': '',
-        '=':'-2', '2':'-2', '3':'-3', '4':'-4', '5':'-5'
+        '=':'-2', '2':'-2', '3':'-3', '4':'-4', '5':'-5', '6':'-6', '7':'-7', '8':'-8', '9':'-9'
     };
 
     y1 = {
@@ -12912,7 +13403,7 @@ function genWaveBrick (text, extra, times) {
         'd':'d',
         'u':'u',
         'z':'z',
-        '=':'v', '2':'v', '3':'v', '4':'v', '5':'v'
+        '=':'v', '2':'v', '3':'v', '4':'v', '5':'v', '6':'v', '7':'v', '8':'v', '9':'v'
     };
 
     y2 = {
@@ -12925,7 +13416,7 @@ function genWaveBrick (text, extra, times) {
         'd': '',
         'u': '',
         'z': '',
-        '=':'-2', '2':'-2', '3':'-3', '4':'-4', '5':'-5'
+        '=':'-2', '2':'-2', '3':'-3', '4':'-4', '5':'-5', '6':'-6', '7':'-7', '8':'-8', '9':'-9'
     };
 
     x4 = {
@@ -12938,7 +13429,7 @@ function genWaveBrick (text, extra, times) {
         'd': 'ddd',
         'u': 'uuu',
         'z': 'zzz',
-        '=': 'vvv-2', '2': 'vvv-2', '3': 'vvv-3', '4': 'vvv-4', '5': 'vvv-5'
+        '=': 'vvv-2', '2': 'vvv-2', '3': 'vvv-3', '4': 'vvv-4', '5': 'vvv-5', '6':'vvv-6', '7':'vvv-7', '8':'vvv-8', '9':'vvv-9'
     };
 
     x5 = {
@@ -12991,466 +13482,90 @@ function genWaveBrick (text, extra, times) {
 
 module.exports = genWaveBrick;
 
-},{"./gen-brick":18}],21:[function(require,module,exports){
+},{"./gen-brick":20}],23:[function(require,module,exports){
 'use strict';
 
 var processAll = require('./process-all');
 var eva = require('./eva');
 var renderWaveForm = require('./render-wave-form');
 var renderWaveElement = require('./render-wave-element');
+var renderAny = require('./render-any.js');
 var editorRefresh = require('./editor-refresh');
 var def = require('../skins/default.js');
+var onmlStringify = require('onml/lib/stringify.js');
 
 exports.processAll = processAll;
 exports.eva = eva;
+exports.renderAny = renderAny;
 exports.renderWaveForm = renderWaveForm;
 exports.renderWaveElement = renderWaveElement;
 exports.editorRefresh = editorRefresh;
-exports.waveSkin = {
-    default: def
+exports.waveSkin = def;
+exports.onml = {
+    stringify: onmlStringify
 };
 
-},{"../skins/default.js":45,"./editor-refresh":15,"./eva":16,"./process-all":33,"./render-wave-element":41,"./render-wave-form":42}],22:[function(require,module,exports){
+},{"../skins/default.js":47,"./editor-refresh":17,"./eva":18,"./process-all":30,"./render-any.js":32,"./render-wave-element":42,"./render-wave-form":43,"onml/lib/stringify.js":9}],24:[function(require,module,exports){
 'use strict';
 
-var jsonmlParse = require('./create-element'),
-    w3 = require('./w3');
-
-function insertSVGTemplateAssign (index, parent) {
-    var node, e;
-    // cleanup
-    while (parent.childNodes.length) {
-        parent.removeChild(parent.childNodes[0]);
-    }
-    e =
-    ['svg', {id: 'svgcontent_' + index, xmlns: w3.svg, 'xmlns:xlink': w3.xlink, overflow:'hidden'},
-        ['style', '.pinname {font-size:12px; font-style:normal; font-variant:normal; font-weight:500; font-stretch:normal; text-align:center; text-anchor:end; font-family:Helvetica} .wirename {font-size:12px; font-style:normal; font-variant:normal; font-weight:500; font-stretch:normal; text-align:center; text-anchor:start; font-family:Helvetica} .wirename:hover {fill:blue} .gate {color:#000; fill:#ffc; fill-opacity: 1;stroke:#000; stroke-width:1; stroke-opacity:1} .gate:hover {fill:red !important; } .wire {fill:none; stroke:#000; stroke-width:1; stroke-opacity:1} .grid {fill:#fff; fill-opacity:1; stroke:none}']
-    ];
-    node = jsonmlParse(e);
-    parent.insertBefore(node, null);
+function insertSVGTemplateAssign () {
+    return ['style', '.pinname {font-size:12px; font-style:normal; font-variant:normal; font-weight:500; font-stretch:normal; text-align:center; text-anchor:end; font-family:Helvetica} .wirename {font-size:12px; font-style:normal; font-variant:normal; font-weight:500; font-stretch:normal; text-align:center; text-anchor:start; font-family:Helvetica} .wirename:hover {fill:blue} .gate {color:#000; fill:#ffc; fill-opacity: 1;stroke:#000; stroke-width:1; stroke-opacity:1} .gate:hover {fill:red !important; } .wire {fill:none; stroke:#000; stroke-width:1; stroke-opacity:1} .grid {fill:#fff; fill-opacity:1; stroke:none}'];
 }
 
 module.exports = insertSVGTemplateAssign;
 
-},{"./create-element":14,"./w3":44}],23:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 'use strict';
 
-var jsonmlParse = require('./create-element');
 var w3 = require('./w3');
-// var waveSkin = require('./wave-skin');
 
-function insertSVGTemplate (index, parent, source, lane, waveSkin) {
-    var node, first, e;
-
-    // cleanup
-    while (parent.childNodes.length) {
-        parent.removeChild(parent.childNodes[0]);
-    }
+function insertSVGTemplate (index, source, lane, waveSkin, content, lanes, groups) {
+    var first, skin, e;
 
     for (first in waveSkin) { break; }
 
-    e = waveSkin.default || waveSkin[first];
+    skin = waveSkin.default || waveSkin[first];
 
     if (source && source.config && source.config.skin && waveSkin[source.config.skin]) {
-        e = waveSkin[source.config.skin];
+        skin = waveSkin[source.config.skin];
     }
 
     if (index === 0) {
-        lane.xs     = Number(e[3][1][2][1].width);
-        lane.ys     = Number(e[3][1][2][1].height);
-        lane.xlabel = Number(e[3][1][2][1].x);
-        lane.ym     = Number(e[3][1][2][1].y);
+        e = skin;
     } else {
-        e = ['svg',
-            {
-                id: 'svg',
-                xmlns: w3.svg,
-                'xmlns:xlink': w3.xlink,
-                height: '0'
-            },
-            ['g',
-                {
-                    id: 'waves'
-                },
-                ['g', {id: 'lanes'}],
-                ['g', {id: 'groups'}]
-            ]
-        ];
+        e = ['svg', {id: 'svg', xmlns: w3.svg, 'xmlns:xlink': w3.xlink}, ['g']];
     }
 
-    e[e.length - 1][1].id    = 'waves_'  + index;
-    e[e.length - 1][2][1].id = 'lanes_'  + index;
-    e[e.length - 1][3][1].id = 'groups_' + index;
-    e[1].id = 'svgcontent_' + index;
-    e[1].height = 0;
+    var width = (lane.xg + (lane.xs * (lane.xmax + 1)));
+    var height = (content.length * lane.yo + lane.yh0 + lane.yh1 + lane.yf0 + lane.yf1);
 
-    node = jsonmlParse(e);
-    parent.insertBefore(node, null);
+    var body = e[e.length - 1];
+
+    body[1] = {id: 'waves_'  + index};
+
+    body[2] = ['g', {
+        id: 'lanes_'  + index,
+        transform: 'translate(' + (lane.xg + 0.5) + ', ' + ((lane.yh0 + lane.yh1) + 0.5) + ')'
+    }].concat(lanes);
+
+    body[3] = ['g', {
+        id: 'groups_' + index
+    }].concat(groups);
+
+    var head = e[1];
+
+    head.id = 'svgcontent_' + index;
+    head.height = height;
+    head.width = width;
+    head.viewBox = '0 0 ' + width + ' ' + height;
+    head.overflow = 'hidden';
+
+    return e;
 }
 
 module.exports = insertSVGTemplate;
 
-},{"./create-element":14,"./w3":44}],24:[function(require,module,exports){
-'use strict';
-
-//attribute name mapping
-var ATTRMAP = {
-        rowspan : 'rowSpan',
-        colspan : 'colSpan',
-        cellpadding : 'cellPadding',
-        cellspacing : 'cellSpacing',
-        tabindex : 'tabIndex',
-        accesskey : 'accessKey',
-        hidefocus : 'hideFocus',
-        usemap : 'useMap',
-        maxlength : 'maxLength',
-        readonly : 'readOnly',
-        contenteditable : 'contentEditable'
-        // can add more attributes here as needed
-    },
-    // attribute duplicates
-    ATTRDUP = {
-        enctype : 'encoding',
-        onscroll : 'DOMMouseScroll'
-        // can add more attributes here as needed
-    },
-    // event names
-    EVTS = (function (/*string[]*/ names) {
-        var evts = {}, evt;
-        while (names.length) {
-            evt = names.shift();
-            evts['on' + evt.toLowerCase()] = evt;
-        }
-        return evts;
-    })('blur,change,click,dblclick,error,focus,keydown,keypress,keyup,load,mousedown,mouseenter,mouseleave,mousemove,mouseout,mouseover,mouseup,resize,scroll,select,submit,unload'.split(','));
-
-/*void*/ function addHandler(/*DOM*/ elem, /*string*/ name, /*function*/ handler) {
-    if (typeof handler === 'string') {
-        handler = new Function('event', handler);
-    }
-
-    if (typeof handler !== 'function') {
-        return;
-    }
-
-    elem[name] = handler;
-}
-
-/*DOM*/ function addAttributes(/*DOM*/ elem, /*object*/ attr) {
-    if (attr.name && document.attachEvent) {
-        // IE fix for not being able to programatically change the name attribute
-        var alt = document.createElement('<' + elem.tagName + ' name=\'' + attr.name + '\'>');
-        // fix for Opera 8.5 and Netscape 7.1 creating malformed elements
-        if (elem.tagName === alt.tagName) {
-            elem = alt;
-        }
-    }
-
-    // for each attributeName
-    for (var name in attr) {
-        if (attr.hasOwnProperty(name)) {
-            // attributeValue
-            var value = attr[name];
-            if (
-                name &&
-                value !== null &&
-                typeof value !== 'undefined'
-            ) {
-                name = ATTRMAP[name.toLowerCase()] || name;
-                if (name === 'style') {
-                    if (typeof elem.style.cssText !== 'undefined') {
-                        elem.style.cssText = value;
-                    } else {
-                        elem.style = value;
-                    }
-                    //                    } else if (name === 'class') {
-                    //                        elem.className = value;
-                    //                        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    //                        elem.setAttribute(name, value);
-                    //                        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                } else if (EVTS[name]) {
-                    addHandler(elem, name, value);
-
-                    // also set duplicated events
-                    if (ATTRDUP[name]) {
-                        addHandler(elem, ATTRDUP[name], value);
-                    }
-                } else if (
-                    typeof value === 'string' ||
-                     typeof value === 'number' ||
-                     typeof value === 'boolean'
-                ) {
-                    elem.setAttribute(name, value);
-
-                    // also set duplicated attributes
-                    if (ATTRDUP[name]) {
-                        elem.setAttribute(ATTRDUP[name], value);
-                    }
-                } else {
-
-                    // allow direct setting of complex properties
-                    elem[name] = value;
-
-                    // also set duplicated attributes
-                    if (ATTRDUP[name]) {
-                        elem[ATTRDUP[name]] = value;
-                    }
-                }
-            }
-        }
-    }
-    return elem;
-}
-
-module.exports = addAttributes;
-
-/* eslint no-new-func:0 */
-
-},{}],25:[function(require,module,exports){
-'use strict';
-
-/*void*/ function appendChild(/*DOM*/ elem, /*DOM*/ child) {
-    if (child) {
-        // if (
-        //     elem.tagName &&
-        //     elem.tagName.toLowerCase() === 'table' &&
-        //     elem.tBodies
-        // ) {
-        //     if (!child.tagName) {
-        //         // must unwrap documentFragment for tables
-        //         if (child.nodeType === 11) {
-        //             while (child.firstChild) {
-        //                 appendChild(elem, child.removeChild(child.firstChild));
-        //             }
-        //         }
-        //         return;
-        //     }
-        //     // in IE must explicitly nest TRs in TBODY
-        //     var childTag = child.tagName.toLowerCase();// child tagName
-        //     if (childTag && childTag !== "tbody" && childTag !== "thead") {
-        //         // insert in last tbody
-        //         var tBody = elem.tBodies.length > 0 ? elem.tBodies[elem.tBodies.length - 1] : null;
-        //         if (!tBody) {
-        //             tBody = document.createElement(childTag === "th" ? "thead" : "tbody");
-        //             elem.appendChild(tBody);
-        //         }
-        //         tBody.appendChild(child);
-        //     } else if (elem.canHaveChildren !== false) {
-        //         elem.appendChild(child);
-        //     }
-        // } else
-        if (
-            elem.tagName &&
-            elem.tagName.toLowerCase() === 'style' &&
-            document.createStyleSheet
-        ) {
-            // IE requires this interface for styles
-            elem.cssText = child;
-        } else
-
-        if (elem.canHaveChildren !== false) {
-            elem.appendChild(child);
-        }
-        // else if (
-        //     elem.tagName &&
-        //     elem.tagName.toLowerCase() === 'object' &&
-        //     child.tagName &&
-        //     child.tagName.toLowerCase() === 'param'
-        // ) {
-        //         // IE-only path
-        //     try {
-        //         elem.appendChild(child);
-        //     } catch (ex1) {
-        //
-        //     }
-        //     try {
-        //         if (elem.object) {
-        //             elem.object[child.name] = child.value;
-        //         }
-        //     } catch (ex2) {}
-        // }
-    }
-}
-
-module.exports = appendChild;
-
-},{}],26:[function(require,module,exports){
-'use strict';
-
-var trimWhitespace = require('./jsonml-trim-whitespace');
-
-/*DOM*/ function hydrate(/*string*/ value) {
-    var wrapper = document.createElement('div');
-    wrapper.innerHTML = value;
-
-    // trim extraneous whitespace
-    trimWhitespace(wrapper);
-
-    // eliminate wrapper for single nodes
-    if (wrapper.childNodes.length === 1) {
-        return wrapper.firstChild;
-    }
-
-    // create a document fragment to hold elements
-    var frag = document.createDocumentFragment ?
-        document.createDocumentFragment() :
-        document.createElement('');
-
-    while (wrapper.firstChild) {
-        frag.appendChild(wrapper.firstChild);
-    }
-    return frag;
-}
-
-module.exports = hydrate;
-
-},{"./jsonml-trim-whitespace":28}],27:[function(require,module,exports){
-'use strict';
-
-var hydrate = require('./jsonml-hydrate'),
-    w3 = require('./w3'),
-    appendChild = require('./jsonml-append-child'),
-    addAttributes = require('./jsonml-add-attributes'),
-    trimWhitespace = require('./jsonml-trim-whitespace');
-
-var patch,
-    parse,
-    onerror = null;
-
-/*bool*/ function isElement (/*JsonML*/ jml) {
-    return (jml instanceof Array) && (typeof jml[0] === 'string');
-}
-
-/*DOM*/ function onError (/*Error*/ ex, /*JsonML*/ jml, /*function*/ filter) {
-    return document.createTextNode('[' + ex + '-' + filter + ']');
-}
-
-patch = /*DOM*/ function (/*DOM*/ elem, /*JsonML*/ jml, /*function*/ filter) {
-    for (var i = 1; i < jml.length; i++) {
-
-        if (
-            (jml[i] instanceof Array) ||
-            (typeof jml[i] === 'string')
-        ) {
-            // append children
-            appendChild(elem, parse(jml[i], filter));
-        // } else if (jml[i] instanceof Unparsed) {
-        } else if (
-            jml[i] &&
-            jml[i].value
-        ) {
-            appendChild(elem, hydrate(jml[i].value));
-        } else if (
-            (typeof jml[i] === 'object') &&
-            (jml[i] !== null) &&
-            elem.nodeType === 1
-        ) {
-            // add attributes
-            elem = addAttributes(elem, jml[i]);
-        }
-    }
-
-    return elem;
-};
-
-parse = /*DOM*/ function (/*JsonML*/ jml, /*function*/ filter) {
-    var elem;
-
-    try {
-        if (!jml) {
-            return null;
-        }
-
-        if (typeof jml === 'string') {
-            return document.createTextNode(jml);
-        }
-
-        // if (jml instanceof Unparsed) {
-        if (jml && jml.value) {
-            return hydrate(jml.value);
-        }
-
-        if (!isElement(jml)) {
-            throw new SyntaxError('invalid JsonML');
-        }
-
-        var tagName = jml[0]; // tagName
-        if (!tagName) {
-            // correctly handle a list of JsonML trees
-            // create a document fragment to hold elements
-            var frag = document.createDocumentFragment ?
-                document.createDocumentFragment() :
-                document.createElement('');
-            for (var i = 2; i < jml.length; i++) {
-                appendChild(frag, parse(jml[i], filter));
-            }
-
-            // trim extraneous whitespace
-            trimWhitespace(frag);
-
-            // eliminate wrapper for single nodes
-            if (frag.childNodes.length === 1) {
-                return frag.firstChild;
-            }
-            return frag;
-        }
-
-        if (
-            tagName.toLowerCase() === 'style' &&
-            document.createStyleSheet
-        ) {
-            // IE requires this interface for styles
-            patch(document.createStyleSheet(), jml, filter);
-            // in IE styles are effective immediately
-            return null;
-        }
-
-        elem = patch(document.createElementNS(w3.svg, tagName), jml, filter);
-
-        // trim extraneous whitespace
-        trimWhitespace(elem);
-        // return (elem && (typeof filter === 'function')) ? filter(elem) : elem;
-        return elem;
-    } catch (ex) {
-        try {
-            // handle error with complete context
-            var err = (typeof onerror === 'function') ? onerror : onError;
-            return err(ex, jml, filter);
-        } catch (ex2) {
-            return document.createTextNode('[' + ex2 + ']');
-        }
-    }
-};
-
-module.exports = parse;
-
-/* eslint yoda:1 */
-
-},{"./jsonml-add-attributes":24,"./jsonml-append-child":25,"./jsonml-hydrate":26,"./jsonml-trim-whitespace":28,"./w3":44}],28:[function(require,module,exports){
-'use strict';
-
-/*bool*/ function isWhitespace(/*DOM*/ node) {
-    return node &&
-        (node.nodeType === 3) &&
-        (!node.nodeValue || !/\S/.exec(node.nodeValue));
-}
-
-/*void*/ function trimWhitespace(/*DOM*/ elem) {
-    if (elem) {
-        while (isWhitespace(elem.firstChild)) {
-            // trim leading whitespace text nodes
-            elem.removeChild(elem.firstChild);
-        }
-        while (isWhitespace(elem.lastChild)) {
-            // trim trailing whitespace text nodes
-            elem.removeChild(elem.lastChild);
-        }
-    }
-}
-
-module.exports = trimWhitespace;
-
-},{}],29:[function(require,module,exports){
+},{"./w3":46}],26:[function(require,module,exports){
 'use strict';
 
 var lane = {
@@ -13475,7 +13590,7 @@ var lane = {
 
 module.exports = lane;
 
-},{}],30:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 'use strict';
 
 function parseConfig (source, lane) {
@@ -13567,7 +13682,7 @@ function parseConfig (source, lane) {
 
 module.exports = parseConfig;
 
-},{}],31:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 'use strict';
 
 var genFirstWaveBrick = require('./gen-first-wave-brick'),
@@ -13638,7 +13753,7 @@ function parseWaveLane (text, extra, lane) {
 
 module.exports = parseWaveLane;
 
-},{"./find-lane-markers":17,"./gen-first-wave-brick":19,"./gen-wave-brick":20}],32:[function(require,module,exports){
+},{"./find-lane-markers":19,"./gen-first-wave-brick":21,"./gen-wave-brick":22}],29:[function(require,module,exports){
 'use strict';
 
 var parseWaveLane = require('./parse-wave-lane');
@@ -13648,7 +13763,9 @@ function data_extract (e, num_unseen_markers) {
 
     ret_data = e.data;
     if (ret_data === undefined) { return null; }
-    if (typeof (ret_data) === 'string') { ret_data= ret_data.split(' '); }
+    if (typeof (ret_data) === 'string') {
+        ret_data = ret_data.trim().split(/\s+/);
+    }
     // slice data array after unseen markers
     ret_data = ret_data.slice( num_unseen_markers );
     return ret_data;
@@ -13692,7 +13809,7 @@ function parseWaveLanes (sig, lane) {
 
 module.exports = parseWaveLanes;
 
-},{"./parse-wave-lane":31}],33:[function(require,module,exports){
+},{"./parse-wave-lane":28}],30:[function(require,module,exports){
 'use strict';
 
 var eva = require('./eva'),
@@ -13703,6 +13820,8 @@ function processAll () {
     var points,
         i,
         index,
+        iwave,
+        obj,
         node0;
         // node1;
 
@@ -13722,9 +13841,14 @@ function processAll () {
         }
     }
     // second pass
+    iwave = 0;
     for (i = 0; i < index; i += 1) {
-        renderWaveForm(i, eva('InputJSON_' + i), 'WaveDrom_Display_');
+        obj = eva('InputJSON_' + i);
+        renderWaveForm(iwave, obj, 'WaveDrom_Display_');
         appendSaveAsDialog(i, 'WaveDrom_Display_');
+        if (obj && obj.signal) {
+            iwave += 1;
+        }
     }
     // add styles
     document.head.innerHTML += '<style type="text/css">div.wavedromMenu{position:fixed;border:solid 1pt#CCCCCC;background-color:white;box-shadow:0px 10px 20px #808080;cursor:default;margin:0px;padding:0px;}div.wavedromMenu>ul{margin:0px;padding:0px;}div.wavedromMenu>ul>li{padding:2px 10px;list-style:none;}div.wavedromMenu>ul>li:hover{background-color:#b5d5ff;}</style>';
@@ -13732,7 +13856,7 @@ function processAll () {
 
 module.exports = processAll;
 
-},{"./append-save-as-dialog":13,"./eva":16,"./render-wave-form":42}],34:[function(require,module,exports){
+},{"./append-save-as-dialog":13,"./eva":18,"./render-wave-form":43}],31:[function(require,module,exports){
 'use strict';
 
 function rec (tmp, state) {
@@ -13763,255 +13887,119 @@ function rec (tmp, state) {
 
 module.exports = rec;
 
-},{}],35:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 'use strict';
 
-var tspan = require('tspan'),
-    jsonmlParse = require('./create-element'),
-    w3 = require('./w3');
+var renderAssign = require('./render-assign.js');
+var renderReg = require('./render-reg.js');
+var renderSignal = require('./render-signal.js');
 
-function renderArcs (root, source, index, top, lane) {
-    var gg,
-        i,
-        k,
-        text,
-        Stack = [],
-        Edge = {words: [], from: 0, shape: '', to: 0, label: ''},
-        Events = {},
-        pos,
-        eventname,
-        // labeltext,
-        label,
-        underlabel,
-        from,
-        to,
-        dx,
-        dy,
-        lx,
-        ly,
-        gmark,
-        lwidth;
+function renderAny (index, source, waveSkin) {
+    var res = source.signal ?
+        renderSignal(index, source, waveSkin) :
+        source.assign ?
+            renderAssign(index, source) :
+            source.reg ?
+                renderReg(index, source) :
+                ['div', {}];
 
-    function t1 () {
-        if (from && to) {
-            gmark = document.createElementNS(w3.svg, 'path');
-            gmark.id = ('gmark_' + Edge.from + '_' + Edge.to);
-            gmark.setAttribute('d', 'M ' + from.x + ',' + from.y + ' ' + to.x   + ',' + to.y);
-            gmark.setAttribute('style', 'fill:none;stroke:#00F;stroke-width:1');
-            gg.insertBefore(gmark, null);
+    res[1].class = 'WaveDrom';
+    return res;
+}
+
+module.exports = renderAny;
+
+},{"./render-assign.js":34,"./render-reg.js":40,"./render-signal.js":41}],33:[function(require,module,exports){
+'use strict';
+
+var arcShape = require('./arc-shape.js');
+var renderLabel = require('./render-label.js');
+
+function renderArc (Edge, from, to, shapeProps) {
+    return ['path', {
+        id: 'gmark_' + Edge.from + '_' + Edge.to,
+        d: shapeProps.d || 'M ' + from.x + ',' + from.y + ' ' + to.x + ',' + to.y,
+        style: shapeProps.style || 'fill:none;stroke:#00F;stroke-width:1'
+    }];
+}
+
+function renderArcs (source, index, top, lane) {
+    var res = ['g', {id: 'wavearcs_' + index}];
+    var Events = {};
+
+    function labeler (element, i) {
+        var pos, eventname, stack;
+        var text = element.node;
+        lane.period = element.period ? element.period : 1;
+        lane.phase  = (element.phase ? element.phase * 2 : 0) + lane.xmin_cfg;
+        if (text) {
+            stack = text.split('');
+            pos = 0;
+            while (stack.length) {
+                eventname = stack.shift();
+                if (eventname !== '.') {
+                    Events[eventname] = {
+                        x: lane.xs *
+                          (2 * pos * lane.period * lane.hscale - lane.phase) +
+                          lane.xlabel,
+                        y: i * lane.yo + lane.y0 + lane.ys * 0.5
+                    };
+                }
+                pos += 1;
+            }
         }
     }
 
-    if (source) {
-        for (i in source) {
-            lane.period = source[i].period ? source[i].period    : 1;
-            lane.phase  = (source[i].phase  ? source[i].phase * 2 : 0) + lane.xmin_cfg;
-            text = source[i].node;
-            if (text) {
-                Stack = text.split('');
-                pos = 0;
-                while (Stack.length) {
-                    eventname = Stack.shift();
-                    if (eventname !== '.') {
-                        Events[eventname] = {
-                            'x' : lane.xs * (2 * pos * lane.period * lane.hscale - lane.phase) + lane.xlabel,
-                            'y' : i * lane.yo + lane.y0 + lane.ys * 0.5
-                        };
-                    }
-                    pos += 1;
-                }
+    function archer (element) {
+        var words = element.trim().split(/\s+/);
+        var Edge = {
+            words: words,
+            label: element.substring(words[0].length).substring(1),
+            from:  words[0].substr(0, 1),
+            to:    words[0].substr(-1, 1),
+            shape: words[0].slice(1, -1)
+        };
+        var from = Events[Edge.from];
+        var to = Events[Edge.to];
+
+        var shapeProps, lx, ly;
+        if (from && to) {
+            shapeProps = arcShape(Edge, from, to);
+            lx = shapeProps.lx;
+            ly = shapeProps.ly;
+            res = res.concat([renderArc(Edge, from, to, shapeProps)]);
+
+            if (Edge.label) {
+                res = res.concat([renderLabel({x: lx, y: ly}, Edge.label)]);
             }
         }
-        gg = document.createElementNS(w3.svg, 'g');
-        gg.id = 'wavearcs_' + index;
-        root.insertBefore(gg, null);
-        if (top.edge) {
-            for (i in top.edge) {
-                Edge.words = top.edge[i].split(' ');
-                Edge.label = top.edge[i].substring(Edge.words[0].length);
-                Edge.label = Edge.label.substring(1);
-                Edge.from  = Edge.words[0].substr(0, 1);
-                Edge.to    = Edge.words[0].substr(-1, 1);
-                Edge.shape = Edge.words[0].slice(1, -1);
-                from  = Events[Edge.from];
-                to    = Events[Edge.to];
-                t1();
-                if (from && to) {
-                    if (Edge.label) {
-                        label = tspan.parse(Edge.label);
-                        label.unshift(
-                            'text',
-                            {
-                                style: 'font-size:10px;',
-                                'text-anchor': 'middle',
-                                'xml:space': 'preserve'
-                            }
-                        );
-                        label = jsonmlParse(label);
-                        underlabel = jsonmlParse(['rect',
-                            {
-                                height: 9,
-                                style: 'fill:#FFF;'
-                            }
-                        ]);
-                        gg.insertBefore(underlabel, null);
-                        gg.insertBefore(label, null);
+    }
 
-                        lwidth = label.getBBox().width;
-
-                        underlabel.setAttribute('width', lwidth);
-                    }
-                    dx = to.x - from.x;
-                    dy = to.y - from.y;
-                    lx = ((from.x + to.x) / 2);
-                    ly = ((from.y + to.y) / 2);
-
-                    switch (Edge.shape) {
-                    case '-'  : {
-                        break;
-                    }
-                    case '~'  : {
-                        gmark.setAttribute('d', 'M ' + from.x + ',' + from.y + ' c ' + (0.7 * dx) + ', 0 ' + (0.3 * dx) + ', ' + dy + ' ' + dx + ', ' + dy);
-                        break;
-                    }
-                    case '-~' : {
-                        gmark.setAttribute('d', 'M ' + from.x + ',' + from.y + ' c ' + (0.7 * dx) + ', 0 ' +         dx + ', ' + dy + ' ' + dx + ', ' + dy);
-                        if (Edge.label) { lx = (from.x + (to.x - from.x) * 0.75); }
-                        break;
-                    }
-                    case '~-' : {
-                        gmark.setAttribute('d', 'M ' + from.x + ',' + from.y + ' c ' + 0          + ', 0 ' + (0.3 * dx) + ', ' + dy + ' ' + dx + ', ' + dy);
-                        if (Edge.label) { lx = (from.x + (to.x - from.x) * 0.25); }
-                        break;
-                    }
-                    case '-|' : {
-                        gmark.setAttribute('d', 'm ' + from.x + ',' + from.y + ' ' + dx + ',0 0,' + dy);
-                        if (Edge.label) { lx = to.x; }
-                        break;
-                    }
-                    case '|-' : {
-                        gmark.setAttribute('d', 'm ' + from.x + ',' + from.y + ' 0,' + dy + ' ' + dx + ',0');
-                        if (Edge.label) { lx = from.x; }
-                        break;
-                    }
-                    case '-|-': {
-                        gmark.setAttribute('d', 'm ' + from.x + ',' + from.y + ' ' + (dx / 2) + ',0 0,' + dy + ' ' + (dx / 2) + ',0');
-                        break;
-                    }
-                    case '->' : {
-                        gmark.setAttribute('style', 'marker-end:url(#arrowhead);stroke:#0041c4;stroke-width:1;fill:none');
-                        break;
-                    }
-                    case '~>' : {
-                        gmark.setAttribute('style', 'marker-end:url(#arrowhead);stroke:#0041c4;stroke-width:1;fill:none');
-                        gmark.setAttribute('d', 'M ' + from.x + ',' + from.y + ' ' + 'c ' + (0.7 * dx) + ', 0 ' + 0.3 * dx + ', ' + dy + ' ' + dx + ', ' + dy);
-                        break;
-                    }
-                    case '-~>': {
-                        gmark.setAttribute('style', 'marker-end:url(#arrowhead);stroke:#0041c4;stroke-width:1;fill:none');
-                        gmark.setAttribute('d', 'M ' + from.x + ',' + from.y + ' ' + 'c ' + (0.7 * dx) + ', 0 ' +     dx + ', ' + dy + ' ' + dx + ', ' + dy);
-                        if (Edge.label) { lx = (from.x + (to.x - from.x) * 0.75); }
-                        break;
-                    }
-                    case '~->': {
-                        gmark.setAttribute('style', 'marker-end:url(#arrowhead);stroke:#0041c4;stroke-width:1;fill:none');
-                        gmark.setAttribute('d', 'M ' + from.x + ',' + from.y + ' ' + 'c ' + 0      + ', 0 ' + (0.3 * dx) + ', ' + dy + ' ' + dx + ', ' + dy);
-                        if (Edge.label) { lx = (from.x + (to.x - from.x) * 0.25); }
-                        break;
-                    }
-                    case '-|>' : {
-                        gmark.setAttribute('style', 'marker-end:url(#arrowhead);stroke:#0041c4;stroke-width:1;fill:none');
-                        gmark.setAttribute('d', 'm ' + from.x + ',' + from.y + ' ' + dx + ',0 0,' + dy);
-                        if (Edge.label) { lx = to.x; }
-                        break;
-                    }
-                    case '|->' : {
-                        gmark.setAttribute('style', 'marker-end:url(#arrowhead);stroke:#0041c4;stroke-width:1;fill:none');
-                        gmark.setAttribute('d', 'm ' + from.x + ',' + from.y + ' 0,' + dy + ' ' + dx + ',0');
-                        if (Edge.label) { lx = from.x; }
-                        break;
-                    }
-                    case '-|->': {
-                        gmark.setAttribute('style', 'marker-end:url(#arrowhead);stroke:#0041c4;stroke-width:1;fill:none');
-                        gmark.setAttribute('d', 'm ' + from.x + ',' + from.y + ' ' + (dx / 2) + ',0 0,' + dy + ' ' + (dx / 2) + ',0');
-                        break;
-                    }
-                    case '<->' : {
-                        gmark.setAttribute('style', 'marker-end:url(#arrowhead);marker-start:url(#arrowtail);stroke:#0041c4;stroke-width:1;fill:none');
-                        break;
-                    }
-                    case '<~>' : {
-                        gmark.setAttribute('style', 'marker-end:url(#arrowhead);marker-start:url(#arrowtail);stroke:#0041c4;stroke-width:1;fill:none');
-                        gmark.setAttribute('d', 'M ' + from.x + ',' + from.y + ' ' + 'c ' + (0.7 * dx) + ', 0 ' + (0.3 * dx) + ', ' + dy + ' ' + dx + ', ' + dy);
-                        break;
-                    }
-                    case '<-~>': {
-                        gmark.setAttribute('style', 'marker-end:url(#arrowhead);marker-start:url(#arrowtail);stroke:#0041c4;stroke-width:1;fill:none');
-                        gmark.setAttribute('d', 'M ' + from.x + ',' + from.y + ' ' + 'c ' + (0.7 * dx) + ', 0 ' +     dx + ', ' + dy + ' ' + dx + ', ' + dy);
-                        if (Edge.label) { lx = (from.x + (to.x - from.x) * 0.75); }
-                        break;
-                    }
-                    case '<-|>' : {
-                        gmark.setAttribute('style', 'marker-end:url(#arrowhead);marker-start:url(#arrowtail);stroke:#0041c4;stroke-width:1;fill:none');
-                        gmark.setAttribute('d', 'm ' + from.x + ',' + from.y + ' ' + dx + ',0 0,' + dy);
-                        if (Edge.label) { lx = to.x; }
-                        break;
-                    }
-                    case '<-|->': {
-                        gmark.setAttribute('style', 'marker-end:url(#arrowhead);marker-start:url(#arrowtail);stroke:#0041c4;stroke-width:1;fill:none');
-                        gmark.setAttribute('d', 'm ' + from.x + ',' + from.y + ' ' + (dx / 2) + ',0 0,' + dy + ' ' + (dx / 2) + ',0');
-                        break;
-                    }
-                    default   : { gmark.setAttribute('style', 'fill:none;stroke:#F00;stroke-width:1'); }
-                    }
-                    if (Edge.label) {
-                        label.setAttribute('x', lx);
-                        label.setAttribute('y', ly + 3);
-                        underlabel.setAttribute('x', lx - lwidth / 2);
-                        underlabel.setAttribute('y', ly - 5);
-                    }
-                }
-            }
+    if (Array.isArray(source)) {
+        source.map(labeler);
+        if (Array.isArray(top.edge)) {
+            top.edge.map(archer);
         }
-        for (k in Events) {
+        Object.keys(Events).map(function (k) {
             if (k === k.toLowerCase()) {
                 if (Events[k].x > 0) {
-                    underlabel = jsonmlParse(['rect',
-                        {
-                            y: Events[k].y - 4,
-                            height: 8,
-                            style: 'fill:#FFF;'
-                        }
-                    ]);
-                    label = jsonmlParse(['text',
-                        {
-                            style: 'font-size:8px;',
-                            x: Events[k].x,
-                            y: Events[k].y + 2,
-                            'text-anchor': 'middle'
-                        },
-                        (k + '')
-                    ]);
-
-                    gg.insertBefore(underlabel, null);
-                    gg.insertBefore(label, null);
-
-                    lwidth = label.getBBox().width + 2;
-
-                    underlabel.setAttribute('x', Events[k].x - lwidth / 2);
-                    underlabel.setAttribute('width', lwidth);
+                    res = res.concat([renderLabel({
+                        x: Events[k].x,
+                        y: Events[k].y
+                    }, k + '')]);
                 }
             }
-        }
+        });
     }
+    return res;
 }
 
 module.exports = renderArcs;
 
-},{"./create-element":14,"./w3":44,"tspan":10}],36:[function(require,module,exports){
+},{"./arc-shape.js":14,"./render-label.js":37}],34:[function(require,module,exports){
 'use strict';
 
-var jsonmlParse = require('./create-element');
+var insertSVGTemplateAssign = require('./insert-svg-template-assign');
 
 function render (tree, state) {
     var y, i, ilen;
@@ -14170,7 +14158,7 @@ function renderAssign (index, source) {
         xmax,
         svg = ['g'],
         grid = ['g'],
-        svgcontent,
+        // svgcontent,
         width,
         height,
         i,
@@ -14205,72 +14193,75 @@ function renderAssign (index, source) {
             }]);
         }
     }
-    svgcontent = document.getElementById('svgcontent_' + index);
-    svgcontent.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
-    svgcontent.setAttribute('width', width);
-    svgcontent.setAttribute('height', height);
-    svgcontent.insertBefore(jsonmlParse(['g', {transform:'translate(0.5, 0.5)'}, grid, svg]), null);
+    return ['svg', {
+        id: 'svgcontent_' + index,
+        viewBox: '0 0 ' + width + ' ' + height,
+        width: width,
+        height: height
+    },
+    insertSVGTemplateAssign(),
+    ['g', {transform:'translate(0.5, 0.5)'}, grid, svg]
+    ];
 }
 
 module.exports = renderAssign;
 
-},{"./create-element":14}],37:[function(require,module,exports){
+},{"./insert-svg-template-assign":24}],35:[function(require,module,exports){
 'use strict';
 
-var w3 = require('./w3');
-
-function renderGaps (root, source, index, lane) {
-    var i, gg, g, b, pos, Stack = [], text, subCycle, next;
-
-    if (source) {
-
-        gg = document.createElementNS(w3.svg, 'g');
-        gg.id = 'wavegaps_' + index;
-        root.insertBefore(gg, null);
-        subCycle = false;
-        for (i in source) {
-            lane.period = source[i].period ? source[i].period    : 1;
-            lane.phase  = (source[i].phase  ? source[i].phase * 2 : 0) + lane.xmin_cfg;
-            g = document.createElementNS(w3.svg, 'g');
-            g.id = 'wavegap_' + i + '_' + index;
-            g.setAttribute('transform', 'translate(0,' + (lane.y0 + i * lane.yo) + ')');
-            gg.insertBefore(g, null);
-
-            text = source[i].wave;
-            if (text) {
-                Stack = text.split('');
-                pos = 0;
-                while (Stack.length) {
-                    next = Stack.shift();
-                    if (next === '<') { // sub-cycles on
-                        subCycle = true;
-                        next = Stack.shift();
-                    }
-                    if (next === '>') { // sub-cycles off
-                        subCycle = false;
-                        next = Stack.shift();
-                    }
-                    if (subCycle) {
-                        pos += 1;
-                    } else {
-                        pos += (2 * lane.period);
-                    }
-                    if (next === '|') {
-                        b    = document.createElementNS(w3.svg, 'use');
-                        // b.id = 'guse_' + pos + '_' + i + '_' + index;
-                        b.setAttributeNS(w3.xlink, 'xlink:href', '#gap');
-                        b.setAttribute('transform', 'translate(' + (lane.xs * ((pos - (subCycle ? 0 : lane.period)) * lane.hscale - lane.phase)) + ')');
-                        g.insertBefore(b, null);
-                    }
-                }
-            }
+function renderGapUses (text, lane) {
+    var res = [];
+    var Stack = (text || '').split('');
+    var pos = 0;
+    var next;
+    var subCycle = false;
+    while (Stack.length) {
+        next = Stack.shift();
+        if (next === '<') { // sub-cycles on
+            subCycle = true;
+            next = Stack.shift();
+        }
+        if (next === '>') { // sub-cycles off
+            subCycle = false;
+            next = Stack.shift();
+        }
+        if (subCycle) {
+            pos += 1;
+        } else {
+            pos += (2 * lane.period);
+        }
+        if (next === '|') {
+            res.push(['use', {
+                'xlink:href': '#gap',
+                transform: 'translate(' + (lane.xs * ((pos - (subCycle ? 0 : lane.period)) * lane.hscale - lane.phase)) + ')'
+            }]);
         }
     }
+    return res;
+}
+
+function renderGaps (source, index, lane) {
+    var i, gaps;
+
+    var res = [];
+    if (source) {
+        for (i in source) {
+            lane.period = source[i].period ? source[i].period : 1;
+            lane.phase  = (source[i].phase  ? source[i].phase * 2 : 0) + lane.xmin_cfg;
+
+            gaps = renderGapUses(source[i].wave, lane);
+            res = res.concat([['g', {
+                id: 'wavegap_' + i + '_' + index,
+                transform: 'translate(0,' + (lane.y0 + i * lane.yo) + ')'
+            }].concat(gaps)]);
+        }
+    }
+    return ['g', {id: 'wavegaps_' + index}].concat(res);
 }
 
 module.exports = renderGaps;
 
-},{"./w3":44}],38:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 'use strict';
 
 var tspan = require('tspan');
@@ -14309,226 +14300,261 @@ function renderGroups (groups, index, lane) {
 
 module.exports = renderGroups;
 
-},{"tspan":10}],39:[function(require,module,exports){
+},{"tspan":10}],37:[function(require,module,exports){
 'use strict';
 
-var tspan = require('tspan'),
-    jsonmlParse = require('./create-element');
-    // w3 = require('./w3');
+var tspan = require('tspan');
+var textWidth = require('./text-width.js');
 
-function renderMarks (root, content, index, lane) {
-    var i, g, marks, mstep, mmstep, gy; // svgns
+function renderLabel (p, text) {
+    var w = textWidth(text, 8) + 2;
+    return ['g', {
+        transform:'translate(' + p.x + ',' + p.y + ')'
+    },
+    ['rect', {
+        x: -(w >> 1),
+        y: -5,
+        width: w,
+        height: 10,
+        style: 'fill:#FFF;'
+    }],
+    ['text', {
+        'text-anchor': 'middle',
+        y: 3,
+        style: 'font-size:8px;'
+    }].concat(tspan.parse(text))
+    ];
+}
 
-    function captext (cxt, anchor, y) {
-        var tmark;
+module.exports = renderLabel;
 
-        if (cxt[anchor] && cxt[anchor].text) {
-            tmark = tspan.parse(cxt[anchor].text);
-            tmark.unshift(
-                'text',
-                {
-                    x: cxt.xmax * cxt.xs / 2,
-                    y: y,
-                    'text-anchor': 'middle',
-                    fill: '#000',
-                    'xml:space': 'preserve'
-                }
-            );
-            tmark = jsonmlParse(tmark);
-            g.insertBefore(tmark, null);
+},{"./text-width.js":45,"tspan":10}],38:[function(require,module,exports){
+'use strict';
+
+var renderMarks = require('./render-marks');
+var renderArcs = require('./render-arcs');
+var renderGaps = require('./render-gaps');
+
+function renderLanes (index, content, waveLanes, ret, source, lane) {
+    return [renderMarks(content, index, lane, source)]
+        .concat(waveLanes.res)
+        .concat([renderArcs(ret.lanes, index, source, lane)])
+        .concat([renderGaps(ret.lanes, index, lane)]);
+}
+
+module.exports = renderLanes;
+
+},{"./render-arcs":33,"./render-gaps":35,"./render-marks":39}],39:[function(require,module,exports){
+'use strict';
+
+var tspan = require('tspan');
+
+function captext (cxt, anchor, y) {
+    if (cxt[anchor] && cxt[anchor].text) {
+        return [
+            ['text', {
+                x: cxt.xmax * cxt.xs / 2,
+                y: y,
+                fill: '#000',
+                'text-anchor': 'middle',
+                'xml:space': 'preserve'
+            }].concat(tspan.parse(cxt[anchor].text))
+        ];
+    }
+    return [];
+}
+
+function ticktock (cxt, ref1, ref2, x, dx, y, len) {
+    var step = 1;
+    var offset;
+    var dp = 0;
+    var val;
+    var L = [];
+    var tmp;
+    var i;
+
+    if (cxt[ref1] === undefined || cxt[ref1][ref2] === undefined) { return []; }
+    val = cxt[ref1][ref2];
+    if (typeof val === 'string') {
+        val = val.trim().split(/\s+/);
+    } else if (typeof val === 'number' || typeof val === 'boolean') {
+        offset = Number(val);
+        val = [];
+        for (i = 0; i < len; i += 1) {
+            val.push(i + offset);
         }
     }
-
-    function ticktock (cxt, ref1, ref2, x, dx, y, len) {
-        var tmark, step = 1, offset, dp = 0, val, L = [], tmp;
-
-        if (cxt[ref1] === undefined || cxt[ref1][ref2] === undefined) { return; }
-        val = cxt[ref1][ref2];
-        if (typeof val === 'string') {
-            val = val.split(' ');
-        } else if (typeof val === 'number' || typeof val === 'boolean') {
-            offset = Number(val);
-            val = [];
-            for (i = 0; i < len; i += 1) {
-                val.push(i + offset);
-            }
-        }
-        if (Object.prototype.toString.call(val) === '[object Array]') {
-            if (val.length === 0) {
-                return;
-            } else if (val.length === 1) {
-                offset = Number(val[0]);
-                if (isNaN(offset)) {
-                    L = val;
-                } else {
-                    for (i = 0; i < len; i += 1) {
-                        L[i] = i + offset;
-                    }
-                }
-            } else if (val.length === 2) {
-                offset = Number(val[0]);
-                step   = Number(val[1]);
-                tmp = val[1].split('.');
-                if ( tmp.length === 2 ) {
-                    dp = tmp[1].length;
-                }
-                if (isNaN(offset) || isNaN(step)) {
-                    L = val;
-                } else {
-                    offset = step * offset;
-                    for (i = 0; i < len; i += 1) {
-                        L[i] = (step * i + offset).toFixed(dp);
-                    }
-                }
-            } else {
+    if (Object.prototype.toString.call(val) === '[object Array]') {
+        if (val.length === 0) {
+            return [];
+        } else if (val.length === 1) {
+            offset = Number(val[0]);
+            if (isNaN(offset)) {
                 L = val;
+            } else {
+                for (i = 0; i < len; i += 1) {
+                    L[i] = i + offset;
+                }
+            }
+        } else if (val.length === 2) {
+            offset = Number(val[0]);
+            step   = Number(val[1]);
+            tmp = val[1].split('.');
+            if ( tmp.length === 2 ) {
+                dp = tmp[1].length;
+            }
+            if (isNaN(offset) || isNaN(step)) {
+                L = val;
+            } else {
+                offset = step * offset;
+                for (i = 0; i < len; i += 1) {
+                    L[i] = (step * i + offset).toFixed(dp);
+                }
             }
         } else {
-            return;
+            L = val;
         }
-        for (i = 0; i < len; i += 1) {
-            tmp = L[i];
-            //  if (typeof tmp === 'number') { tmp += ''; }
-            tmark = tspan.parse(tmp);
-            tmark.unshift(
-                'text',
-                {
-                    x: i * dx + x,
-                    y: y,
-                    'text-anchor': 'middle',
-                    class: 'muted',
-                    'xml:space': 'preserve'
-                }
-            );
-            tmark = jsonmlParse(tmark);
-            g.insertBefore(tmark, null);
-        }
+    } else {
+        return [];
     }
 
-    mstep  = 2 * (lane.hscale);
-    mmstep = mstep * lane.xs;
-    marks  = lane.xmax / mstep;
-    gy     = content.length * lane.yo;
-
-    g = jsonmlParse(['g', {id: ('gmarks_' + index)}]);
-    root.insertBefore(g, root.firstChild);
-
-    for (i = 0; i < (marks + 1); i += 1) {
-        g.insertBefore(
-            jsonmlParse([
-                'path',
-                {
-                    id:    'gmark_' + i + '_' + index,
-                    d:     'm ' + (i * mmstep) + ',' + 0 + ' 0,' + gy,
-                    style: 'stroke:#888;stroke-width:0.5;stroke-dasharray:1,3'
-                }
-            ]),
-            null
-        );
+    var res = [];
+    for (i = 0; i < len; i += 1) {
+        res = res.concat([
+            ['text', {
+                x: i * dx + x,
+                y: y,
+                class: 'muted',
+                'text-anchor': 'middle',
+                'xml:space': 'preserve'
+            }].concat(tspan.parse(L[i]))
+        ]);
     }
+    return res;
+}
 
-    captext(lane, 'head', (lane.yh0 ? -33 : -13));
-    captext(lane, 'foot', gy + (lane.yf0 ? 45 : 25));
+function renderMarks (content, index, lane, source) {
+    var mstep  = 2 * (lane.hscale);
+    var mmstep = mstep * lane.xs;
+    var marks  = lane.xmax / mstep;
+    var gy     = content.length * lane.yo;
 
-    ticktock(lane, 'head', 'tick',          0, mmstep,      -5, marks + 1);
-    ticktock(lane, 'head', 'tock', mmstep / 2, mmstep,      -5, marks);
-    ticktock(lane, 'foot', 'tick',          0, mmstep, gy + 15, marks + 1);
-    ticktock(lane, 'foot', 'tock', mmstep / 2, mmstep, gy + 15, marks);
+    var i;
+    var res = ['g', {id: ('gmarks_' + index)}];
+    if (!(source && source.config && source.config.marks === false)) {
+        for (i = 0; i < (marks + 1); i += 1) {
+            res = res.concat([['path', {
+                id:    'gmark_' + i + '_' + index,
+                d:     'm ' + (i * mmstep) + ',' + 0 + ' 0,' + gy,
+                style: 'stroke:#888;stroke-width:0.5;stroke-dasharray:1,3'
+            }]]);
+        }
+    }
+    return res
+        .concat(captext(lane, 'head', (lane.yh0 ? -33 : -13)))
+        .concat(captext(lane, 'foot', gy + (lane.yf0 ? 45 : 25)))
+        .concat(ticktock(lane, 'head', 'tick',          0, mmstep,      -5, marks + 1))
+        .concat(ticktock(lane, 'head', 'tock', mmstep / 2, mmstep,      -5, marks))
+        .concat(ticktock(lane, 'foot', 'tick',          0, mmstep, gy + 15, marks + 1))
+        .concat(ticktock(lane, 'foot', 'tock', mmstep / 2, mmstep, gy + 15, marks));
 }
 
 module.exports = renderMarks;
 
-},{"./create-element":14,"tspan":10}],40:[function(require,module,exports){
+},{"tspan":10}],40:[function(require,module,exports){
 'use strict';
 
-var jsonmlParse = require('./create-element'),
-    render = require('bit-field/lib/render');
+var render = require('bit-field/lib/render');
 
-function renderReg (index, source, parent) {
-    // cleanup
-    while (parent.childNodes.length) {
-        parent.removeChild(parent.childNodes[0]);
-    }
-    var e = render(source.reg, source.config);
-    var node = jsonmlParse(e);
-    parent.insertBefore(node, null);
+function renderReg (index, source) {
+    return render(source.reg, source.config);
 }
 
 module.exports = renderReg;
 
-},{"./create-element":14,"bit-field/lib/render":1}],41:[function(require,module,exports){
+},{"bit-field/lib/render":1}],41:[function(require,module,exports){
 'use strict';
 
-var rec = require('./rec'),
-    lane = require('./lane'),
-    jsonmlParse = require('./create-element'),
-    parseConfig = require('./parse-config'),
-    parseWaveLanes = require('./parse-wave-lanes'),
-    renderMarks = require('./render-marks'),
-    renderGaps = require('./render-gaps'),
-    renderGroups = require('./render-groups'),
-    renderWaveLane = require('./render-wave-lane'),
-    renderAssign = require('./render-assign'),
-    renderReg = require('./render-reg'),
-    renderArcs = require('./render-arcs'),
-    insertSVGTemplate = require('./insert-svg-template'),
-    insertSVGTemplateAssign = require('./insert-svg-template-assign');
+var rec = require('./rec');
+var lane = require('./lane');
+var parseConfig = require('./parse-config');
+var parseWaveLanes = require('./parse-wave-lanes');
+var renderGroups = require('./render-groups');
+var renderLanes = require('./render-lanes');
+var renderWaveLane = require('./render-wave-lane');
 
-function findFirstChildByTagName (parent, name) {
-    var i;
-    var arr = parent.children;
-    var ilen = arr.length;
-    for (i = 0; i < ilen; i++) {
-        if (arr[i].tagName === name) {
-            return arr[i];
-        }
+var insertSVGTemplate = require('./insert-svg-template');
+
+function laneParamsFromSkin (index, source, lane, waveSkin) {
+
+    if (index !== 0) { return; }
+
+    var first, skin, socket;
+
+    for (first in waveSkin) { break; }
+
+    skin = waveSkin.default || waveSkin[first];
+
+    if (source && source.config && source.config.skin && waveSkin[source.config.skin]) {
+        skin = waveSkin[source.config.skin];
     }
+
+    socket = skin[3][1][2][1];
+
+    lane.xs     = Number(socket.width);
+    lane.ys     = Number(socket.height);
+    lane.xlabel = Number(socket.x);
+    lane.ym     = Number(socket.y);
 }
 
+function renderSignal (index, source, waveSkin) {
+
+    laneParamsFromSkin (index, source, lane, waveSkin);
+
+    parseConfig(source, lane);
+    var ret = rec(source.signal, {'x':0, 'y':0, 'xmax':0, 'width':[], 'lanes':[], 'groups':[]});
+    var content = parseWaveLanes(ret.lanes, lane);
+
+    var waveLanes = renderWaveLane(content, index, lane);
+    var waveGroups = renderGroups(ret.groups, index, lane);
+
+    var xmax = waveLanes.glengths.reduce(function (res, len, i) {
+        return Math.max(res, len + ret.width[i]);
+    }, 0);
+
+    lane.xg = Math.ceil((xmax - lane.tgo) / lane.xs) * lane.xs;
+
+    return insertSVGTemplate(
+        index, source, lane, waveSkin, content,
+        renderLanes(index, content, waveLanes, ret, source, lane),
+        waveGroups
+    );
+
+}
+
+module.exports = renderSignal;
+
+},{"./insert-svg-template":25,"./lane":26,"./parse-config":27,"./parse-wave-lanes":29,"./rec":31,"./render-groups":36,"./render-lanes":38,"./render-wave-lane":44}],42:[function(require,module,exports){
+'use strict';
+
+var renderAny = require('./render-any.js');
+var jsonmlParse = require('./create-element');
+
 function renderWaveElement (index, source, outputElement, waveSkin) {
-    if (source.signal) {
 
-        insertSVGTemplate(index, outputElement, source, lane, waveSkin);
-        parseConfig(source, lane);
-
-        var ret = rec(source.signal, {'x':0, 'y':0, 'xmax':0, 'width':[], 'lanes':[], 'groups':[]});
-
-        var svgcontent  = outputElement.children[0];
-        var waves = findFirstChildByTagName (svgcontent, 'g');
-        var lanes = waves.children[0];
-        var groups = waves.children[1];
-
-        var content  = parseWaveLanes(ret.lanes, lane);
-        var glengths = renderWaveLane(lanes, content, index, lane);
-
-        var xmax = glengths.reduce(function (res, len, i) {
-            return Math.max(res, len + ret.width[i]);
-        }, 0);
-
-        renderMarks(lanes, content, index, lane);
-        renderArcs(lanes, ret.lanes, index, source, lane);
-        renderGaps(lanes, ret.lanes, index, lane);
-        groups.insertBefore(jsonmlParse(renderGroups(ret.groups, index, lane)), null);
-        lane.xg = Math.ceil((xmax - lane.tgo) / lane.xs) * lane.xs;
-        var width = (lane.xg + (lane.xs * (lane.xmax + 1)));
-        var height = (content.length * lane.yo + lane.yh0 + lane.yh1 + lane.yf0 + lane.yf1);
-
-        svgcontent.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
-        svgcontent.setAttribute('width', width);
-        svgcontent.setAttribute('height', height);
-        svgcontent.setAttribute('overflow', 'hidden');
-        lanes.setAttribute('transform', 'translate(' + (lane.xg + 0.5) + ', ' + ((lane.yh0 + lane.yh1) + 0.5) + ')');
-    } else if (source.assign) {
-        insertSVGTemplateAssign(index, outputElement, source);
-        renderAssign(index, source);
-    } else if (source.reg) {
-        renderReg(index, source, outputElement);
+    // cleanup
+    while (outputElement.childNodes.length) {
+        outputElement.removeChild(outputElement.childNodes[0]);
     }
+
+    outputElement.insertBefore(jsonmlParse(
+        renderAny(index, source, waveSkin)
+    ), null);
 }
 
 module.exports = renderWaveElement;
 
-},{"./create-element":14,"./insert-svg-template":23,"./insert-svg-template-assign":22,"./lane":29,"./parse-config":30,"./parse-wave-lanes":32,"./rec":34,"./render-arcs":35,"./render-assign":36,"./render-gaps":37,"./render-groups":38,"./render-marks":39,"./render-reg":40,"./render-wave-lane":43}],42:[function(require,module,exports){
+},{"./create-element":16,"./render-any.js":32}],43:[function(require,module,exports){
 'use strict';
 
 var renderWaveElement = require('./render-wave-element');
@@ -14539,114 +14565,122 @@ function renderWaveForm (index, source, output) {
 
 module.exports = renderWaveForm;
 
-},{"./render-wave-element":41}],43:[function(require,module,exports){
+},{"./render-wave-element":42}],44:[function(require,module,exports){
 'use strict';
 
-var tspan = require('tspan'),
-    jsonmlParse = require('./create-element'),
-    w3 = require('./w3'),
-    findLaneMarkers = require('./find-lane-markers');
+var tspan = require('tspan');
+var textWidth = require('./text-width.js');
+var findLaneMarkers = require('./find-lane-markers');
 
-function renderWaveLane (root, content, index, lane) {
-    var i,
+function renderLaneUses (cont, lane) {
+    var i, k;
+    var res = [];
+    var labels = [];
+    if (cont[1]) {
+        for (i = 0; i < cont[1].length; i += 1) {
+            res.push(['use', {
+                'xlink:href': '#' + cont[1][i],
+                transform: 'translate(' + (i * lane.xs) + ')'
+            }]);
+        }
+        if (cont[2] && cont[2].length) {
+            labels = findLaneMarkers(cont[1]);
+            if (labels.length) {
+                for (k in labels) {
+                    if (cont[2] && (cont[2][k] !== undefined)) {
+                        res.push(['text', {
+                            x: labels[k] * lane.xs + lane.xlabel,
+                            y: lane.ym,
+                            'text-anchor': 'middle',
+                            'xml:space': 'preserve'
+                        }].concat(tspan.parse(cont[2][k])));
+                    }
+                }
+            }
+        }
+    }
+    return res;
+}
+
+function renderWaveLane (content, index, lane) {
+    var // i,
         j,
-        k,
-        g,
-        gg,
-        title,
-        b,
-        labels = [1],
         name,
         xoffset,
         xmax     = 0,
         xgmax    = 0,
         glengths = [];
 
+    var res = [];
+
     for (j = 0; j < content.length; j += 1) {
         name = content[j][0][0];
         if (name) { // check name
-            g = jsonmlParse(['g',
-                {
-                    id: 'wavelane_' + j + '_' + index,
-                    transform: 'translate(0,' + ((lane.y0) + j * lane.yo) + ')'
-                }
-            ]);
-            root.insertBefore(g, null);
-            title = tspan.parse(name);
-            title.unshift(
-                'text',
-                {
-                    x: lane.tgo,
-                    y: lane.ym,
-                    class: 'info',
-                    'text-anchor': 'end',
-                    'xml:space': 'preserve'
-                }
-            );
-            title = jsonmlParse(title);
-            g.insertBefore(title, null);
-
-            // scale = lane.xs * (lane.hscale) * 2;
-
-            glengths.push(title.getBBox().width);
 
             xoffset = content[j][0][1];
-            xoffset = (xoffset > 0) ? (Math.ceil(2 * xoffset) - 2 * xoffset) :
-                (-2 * xoffset);
-            gg = jsonmlParse(['g',
-                {
-                    id: 'wavelane_draw_' + j + '_' + index,
-                    transform: 'translate(' + (xoffset * lane.xs) + ', 0)'
-                }
+            xoffset = (xoffset > 0)
+                ? (Math.ceil(2 * xoffset) - 2 * xoffset)
+                : (-2 * xoffset);
+
+            res.push(['g', {
+                id: 'wavelane_' + j + '_' + index,
+                transform: 'translate(0,' + ((lane.y0) + j * lane.yo) + ')'
+            },
+            ['text', {
+                x: lane.tgo,
+                y: lane.ym,
+                class: 'info',
+                'text-anchor': 'end',
+                'xml:space': 'preserve'
+            }].concat(tspan.parse(name)),
+            ['g', {
+                id: 'wavelane_draw_' + j + '_' + index,
+                transform: 'translate(' + (xoffset * lane.xs) + ', 0)'
+            }].concat(renderLaneUses(content[j], lane))
             ]);
-            g.insertBefore(gg, null);
 
-            if (content[j][1]) {
-                for (i = 0; i < content[j][1].length; i += 1) {
-                    b = document.createElementNS(w3.svg, 'use');
-                    // b.id = 'use_' + i + '_' + j + '_' + index;
-                    b.setAttributeNS(w3.xlink, 'xlink:href', '#' + content[j][1][i]);
-                    // b.setAttribute('transform', 'translate(' + (i * lane.xs) + ')');
-                    b.setAttribute('transform', 'translate(' + (i * lane.xs) + ')');
-                    gg.insertBefore(b, null);
-                }
-                if (content[j][2] && content[j][2].length) {
-                    labels = findLaneMarkers(content[j][1]);
-
-                    if (labels.length !== 0) {
-                        for (k in labels) {
-                            if (content[j][2] && (typeof content[j][2][k] !== 'undefined')) {
-                                title = tspan.parse(content[j][2][k]);
-                                title.unshift(
-                                    'text',
-                                    {
-                                        x: labels[k] * lane.xs + lane.xlabel,
-                                        y: lane.ym,
-                                        'text-anchor': 'middle',
-                                        'xml:space': 'preserve'
-                                    }
-                                );
-                                title = jsonmlParse(title);
-                                gg.insertBefore(title, null);
-                            }
-                        }
-                    }
-                }
-                if (content[j][1].length > xmax) {
-                    xmax = content[j][1].length;
-                }
-            }
+            xmax = Math.max(xmax, (content[j][1] || []).length);
+            glengths.push(textWidth(name, 11));
         }
     }
     // xmax if no xmax_cfg,xmin_cfg, else set to config
     lane.xmax = Math.min(xmax, lane.xmax_cfg - lane.xmin_cfg);
     lane.xg = xgmax + 20;
-    return glengths;
+    return {glengths: glengths, res: res};
 }
 
 module.exports = renderWaveLane;
 
-},{"./create-element":14,"./find-lane-markers":17,"./w3":44,"tspan":10}],44:[function(require,module,exports){
+},{"./find-lane-markers":19,"./text-width.js":45,"tspan":10}],45:[function(require,module,exports){
+'use strict';
+
+var charWidth = require('./char-width');
+
+/**
+    Calculates text string width in pixels.
+
+    @param {String} str text string to be measured
+    @param {Number} size font size used
+    @return {Number} text string width
+*/
+
+module.exports = function (str, size) {
+    var i, len, c, w, width;
+    size = size || 11; // default size 11pt
+    len = str.length;
+    width = 0;
+    for (i = 0; i < len; i++) {
+        c = str.charCodeAt(i);
+        w = charWidth.chars[c];
+        if (w === undefined) {
+            w = charWidth.other;
+        }
+        width += w;
+    }
+    return (width * size) / 100; // normalize
+};
+
+},{"./char-width":15}],46:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -14655,9 +14689,10 @@ module.exports = {
     xmlns: 'http://www.w3.org/XML/1998/namespace'
 };
 
-},{}],45:[function(require,module,exports){
-var WaveSkin=WaveSkin||{};WaveSkin.default=["svg",{"id":"svg","xmlns":"http://www.w3.org/2000/svg","xmlns:xlink":"http://www.w3.org/1999/xlink","height":"0"},["style",{"type":"text/css"},"text{font-size:11pt;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;fill-opacity:1;font-family:Helvetica}.muted{fill:#aaa}.warning{fill:#f6b900}.error{fill:#f60000}.info{fill:#0041c4}.success{fill:#00ab00}.h1{font-size:33pt;font-weight:bold}.h2{font-size:27pt;font-weight:bold}.h3{font-size:20pt;font-weight:bold}.h4{font-size:14pt;font-weight:bold}.h5{font-size:11pt;font-weight:bold}.h6{font-size:8pt;font-weight:bold}.s1{fill:none;stroke:#000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none}.s2{fill:none;stroke:#000;stroke-width:0.5;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none}.s3{color:#000;fill:none;stroke:#000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1, 3;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate}.s4{color:#000;fill:none;stroke:#000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible}.s5{fill:#fff;stroke:none}.s6{color:#000;fill:#ffffb4;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate}.s7{color:#000;fill:#ffe0b9;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate}.s8{color:#000;fill:#b9e0ff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate}.s9{fill:#000;fill-opacity:1;stroke:none}.s10{color:#000;fill:#fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate}.s11{fill:#0041c4;fill-opacity:1;stroke:none}.s12{fill:none;stroke:#0041c4;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none}"],["defs",["g",{"id":"socket"},["rect",{"y":"15","x":"6","height":"20","width":"20"}]],["g",{"id":"pclk"},["path",{"d":"M0,20 0,0 20,0","class":"s1"}]],["g",{"id":"nclk"},["path",{"d":"m0,0 0,20 20,0","class":"s1"}]],["g",{"id":"000"},["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"0m0"},["path",{"d":"m0,20 3,0 3,-10 3,10 11,0","class":"s1"}]],["g",{"id":"0m1"},["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"0mx"},["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 5,20","class":"s2"}],["path",{"d":"M20,0 4,16","class":"s2"}],["path",{"d":"M15,0 6,9","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"0md"},["path",{"d":"m8,20 10,0","class":"s3"}],["path",{"d":"m0,20 5,0","class":"s1"}]],["g",{"id":"0mu"},["path",{"d":"m0,20 3,0 C 7,10 10.107603,0 20,0","class":"s1"}]],["g",{"id":"0mz"},["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"111"},["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"1m0"},["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}]],["g",{"id":"1m1"},["path",{"d":"M0,0 3,0 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"1mx"},["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 6,9","class":"s2"}],["path",{"d":"M10,0 5,5","class":"s2"}],["path",{"d":"M3.5,1.5 5,0","class":"s2"}]],["g",{"id":"1md"},["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}]],["g",{"id":"1mu"},["path",{"d":"M0,0 5,0","class":"s1"}],["path",{"d":"M8,0 18,0","class":"s3"}]],["g",{"id":"1mz"},["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s1"}]],["g",{"id":"xxx"},["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,5 5,0","class":"s2"}],["path",{"d":"M0,10 10,0","class":"s2"}],["path",{"d":"M0,15 15,0","class":"s2"}],["path",{"d":"M0,20 20,0","class":"s2"}],["path",{"d":"M5,20 20,5","class":"s2"}],["path",{"d":"M10,20 20,10","class":"s2"}],["path",{"d":"m15,20 5,-5","class":"s2"}]],["g",{"id":"xm0"},["path",{"d":"M0,0 4,0 9,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,5 4,1","class":"s2"}],["path",{"d":"M0,10 5,5","class":"s2"}],["path",{"d":"M0,15 6,9","class":"s2"}],["path",{"d":"M0,20 7,13","class":"s2"}],["path",{"d":"M5,20 8,17","class":"s2"}]],["g",{"id":"xm1"},["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,20 4,20 9,0","class":"s1"}],["path",{"d":"M0,5 5,0","class":"s2"}],["path",{"d":"M0,10 9,1","class":"s2"}],["path",{"d":"M0,15 7,8","class":"s2"}],["path",{"d":"M0,20 5,15","class":"s2"}]],["g",{"id":"xmx"},["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,5 5,0","class":"s2"}],["path",{"d":"M0,10 10,0","class":"s2"}],["path",{"d":"M0,15 15,0","class":"s2"}],["path",{"d":"M0,20 20,0","class":"s2"}],["path",{"d":"M5,20 20,5","class":"s2"}],["path",{"d":"M10,20 20,10","class":"s2"}],["path",{"d":"m15,20 5,-5","class":"s2"}]],["g",{"id":"xmd"},["path",{"d":"m0,0 4,0 c 3,10 6,20 16,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,5 4,1","class":"s2"}],["path",{"d":"M0,10 5.5,4.5","class":"s2"}],["path",{"d":"M0,15 6.5,8.5","class":"s2"}],["path",{"d":"M0,20 8,12","class":"s2"}],["path",{"d":"m5,20 5,-5","class":"s2"}],["path",{"d":"m10,20 2.5,-2.5","class":"s2"}]],["g",{"id":"xmu"},["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"m0,20 4,0 C 7,10 10,0 20,0","class":"s1"}],["path",{"d":"M0,5 5,0","class":"s2"}],["path",{"d":"M0,10 10,0","class":"s2"}],["path",{"d":"M0,15 10,5","class":"s2"}],["path",{"d":"M0,20 6,14","class":"s2"}]],["g",{"id":"xmz"},["path",{"d":"m0,0 4,0 c 6,10 11,10 16,10","class":"s1"}],["path",{"d":"m0,20 4,0 C 10,10 15,10 20,10","class":"s1"}],["path",{"d":"M0,5 4.5,0.5","class":"s2"}],["path",{"d":"M0,10 6.5,3.5","class":"s2"}],["path",{"d":"M0,15 8.5,6.5","class":"s2"}],["path",{"d":"M0,20 11.5,8.5","class":"s2"}]],["g",{"id":"ddd"},["path",{"d":"m0,20 20,0","class":"s3"}]],["g",{"id":"dm0"},["path",{"d":"m0,20 10,0","class":"s3"}],["path",{"d":"m12,20 8,0","class":"s1"}]],["g",{"id":"dm1"},["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"dmx"},["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 5,20","class":"s2"}],["path",{"d":"M20,0 4,16","class":"s2"}],["path",{"d":"M15,0 6,9","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"dmd"},["path",{"d":"m0,20 20,0","class":"s3"}]],["g",{"id":"dmu"},["path",{"d":"m0,20 3,0 C 7,10 10.107603,0 20,0","class":"s1"}]],["g",{"id":"dmz"},["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"uuu"},["path",{"d":"M0,0 20,0","class":"s3"}]],["g",{"id":"um0"},["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}]],["g",{"id":"um1"},["path",{"d":"M0,0 10,0","class":"s3"}],["path",{"d":"m12,0 8,0","class":"s1"}]],["g",{"id":"umx"},["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 6,9","class":"s2"}],["path",{"d":"M10,0 5,5","class":"s2"}],["path",{"d":"M3.5,1.5 5,0","class":"s2"}]],["g",{"id":"umd"},["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}]],["g",{"id":"umu"},["path",{"d":"M0,0 20,0","class":"s3"}]],["g",{"id":"umz"},["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s4"}]],["g",{"id":"zzz"},["path",{"d":"m0,10 20,0","class":"s1"}]],["g",{"id":"zm0"},["path",{"d":"m0,10 6,0 3,10 11,0","class":"s1"}]],["g",{"id":"zm1"},["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"zmx"},["path",{"d":"m6,10 3,10 11,0","class":"s1"}],["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 6.5,8.5","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}]],["g",{"id":"zmd"},["path",{"d":"m0,10 7,0 c 3,5 8,10 13,10","class":"s1"}]],["g",{"id":"zmu"},["path",{"d":"m0,10 7,0 C 10,5 15,0 20,0","class":"s1"}]],["g",{"id":"zmz"},["path",{"d":"m0,10 20,0","class":"s1"}]],["g",{"id":"gap"},["path",{"d":"m7,-2 -4,0 c -5,0 -5,24 -10,24 l 4,0 C 2,22 2,-2 7,-2 z","class":"s5"}],["path",{"d":"M-7,22 C -2,22 -2,-2 3,-2","class":"s1"}],["path",{"d":"M-3,22 C 2,22 2,-2 7,-2","class":"s1"}]],["g",{"id":"0mv-3"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s6"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"1mv-3"},["path",{"d":"M2.875,0 20,0 20,20 9,20 z","class":"s6"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"xmv-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s6"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,5 3.5,1.5","class":"s2"}],["path",{"d":"M0,10 4.5,5.5","class":"s2"}],["path",{"d":"M0,15 6,9","class":"s2"}],["path",{"d":"M0,20 4,16","class":"s2"}]],["g",{"id":"dmv-3"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s6"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"umv-3"},["path",{"d":"M3,0 20,0 20,20 9,20 z","class":"s6"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"zmv-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s6"}],["path",{"d":"m6,10 3,10 11,0","class":"s1"}],["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"vvv-3"},["path",{"d":"M20,20 0,20 0,0 20,0","class":"s6"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vm0-3"},["path",{"d":"M0,20 0,0 3,0 9,20","class":"s6"}],["path",{"d":"M0,0 3,0 9,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vm1-3"},["path",{"d":"M0,0 0,20 3,20 9,0","class":"s6"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0","class":"s1"}]],["g",{"id":"vmx-3"},["path",{"d":"M0,0 0,20 3,20 6,10 3,0","class":"s6"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 7,8","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}]],["g",{"id":"vmd-3"},["path",{"d":"m0,0 0,20 20,0 C 10,20 7,10 3,0","class":"s6"}],["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vmu-3"},["path",{"d":"m0,0 0,20 3,0 C 7,10 10,0 20,0","class":"s6"}],["path",{"d":"m0,20 3,0 C 7,10 10,0 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vmz-3"},["path",{"d":"M0,0 3,0 C 10,10 15,10 20,10 15,10 10,10 3,20 L 0,20","class":"s6"}],["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s1"}],["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"vmv-3-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s6"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s6"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-3-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s6"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-3-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s6"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-4-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s6"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s7"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-4-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s7"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-4-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s7"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-5-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s6"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s8"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-5-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s8"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-5-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s8"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"0mv-4"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s7"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"1mv-4"},["path",{"d":"M2.875,0 20,0 20,20 9,20 z","class":"s7"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"xmv-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,5 3.5,1.5","class":"s2"}],["path",{"d":"M0,10 4.5,5.5","class":"s2"}],["path",{"d":"M0,15 6,9","class":"s2"}],["path",{"d":"M0,20 4,16","class":"s2"}]],["g",{"id":"dmv-4"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s7"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"umv-4"},["path",{"d":"M3,0 20,0 20,20 9,20 z","class":"s7"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"zmv-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"m6,10 3,10 11,0","class":"s1"}],["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"0mv-5"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s8"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"1mv-5"},["path",{"d":"M2.875,0 20,0 20,20 9,20 z","class":"s8"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"xmv-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,5 3.5,1.5","class":"s2"}],["path",{"d":"M0,10 4.5,5.5","class":"s2"}],["path",{"d":"M0,15 6,9","class":"s2"}],["path",{"d":"M0,20 4,16","class":"s2"}]],["g",{"id":"dmv-5"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s8"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"umv-5"},["path",{"d":"M3,0 20,0 20,20 9,20 z","class":"s8"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"zmv-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"m6,10 3,10 11,0","class":"s1"}],["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"vvv-4"},["path",{"d":"M20,20 0,20 0,0 20,0","class":"s7"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vm0-4"},["path",{"d":"M0,20 0,0 3,0 9,20","class":"s7"}],["path",{"d":"M0,0 3,0 9,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vm1-4"},["path",{"d":"M0,0 0,20 3,20 9,0","class":"s7"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0","class":"s1"}]],["g",{"id":"vmx-4"},["path",{"d":"M0,0 0,20 3,20 6,10 3,0","class":"s7"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 7,8","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}]],["g",{"id":"vmd-4"},["path",{"d":"m0,0 0,20 20,0 C 10,20 7,10 3,0","class":"s7"}],["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vmu-4"},["path",{"d":"m0,0 0,20 3,0 C 7,10 10,0 20,0","class":"s7"}],["path",{"d":"m0,20 3,0 C 7,10 10,0 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vmz-4"},["path",{"d":"M0,0 3,0 C 10,10 15,10 20,10 15,10 10,10 3,20 L 0,20","class":"s7"}],["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s1"}],["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"vvv-5"},["path",{"d":"M20,20 0,20 0,0 20,0","class":"s8"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vm0-5"},["path",{"d":"M0,20 0,0 3,0 9,20","class":"s8"}],["path",{"d":"M0,0 3,0 9,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vm1-5"},["path",{"d":"M0,0 0,20 3,20 9,0","class":"s8"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0","class":"s1"}]],["g",{"id":"vmx-5"},["path",{"d":"M0,0 0,20 3,20 6,10 3,0","class":"s8"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 7,8","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}]],["g",{"id":"vmd-5"},["path",{"d":"m0,0 0,20 20,0 C 10,20 7,10 3,0","class":"s8"}],["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vmu-5"},["path",{"d":"m0,0 0,20 3,0 C 7,10 10,0 20,0","class":"s8"}],["path",{"d":"m0,20 3,0 C 7,10 10,0 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vmz-5"},["path",{"d":"M0,0 3,0 C 10,10 15,10 20,10 15,10 10,10 3,20 L 0,20","class":"s8"}],["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s1"}],["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"Pclk"},["path",{"d":"M-3,12 0,3 3,12 C 1,11 -1,11 -3,12 z","class":"s9"}],["path",{"d":"M0,20 0,0 20,0","class":"s1"}]],["g",{"id":"Nclk"},["path",{"d":"M-3,8 0,17 3,8 C 1,9 -1,9 -3,8 z","class":"s9"}],["path",{"d":"m0,0 0,20 20,0","class":"s1"}]],["g",{"id":"vvv-2"},["path",{"d":"M20,20 0,20 0,0 20,0","class":"s10"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vm0-2"},["path",{"d":"M0,20 0,0 3,0 9,20","class":"s10"}],["path",{"d":"M0,0 3,0 9,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vm1-2"},["path",{"d":"M0,0 0,20 3,20 9,0","class":"s10"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0","class":"s1"}]],["g",{"id":"vmx-2"},["path",{"d":"M0,0 0,20 3,20 6,10 3,0","class":"s10"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 7,8","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}]],["g",{"id":"vmd-2"},["path",{"d":"m0,0 0,20 20,0 C 10,20 7,10 3,0","class":"s10"}],["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vmu-2"},["path",{"d":"m0,0 0,20 3,0 C 7,10 10,0 20,0","class":"s10"}],["path",{"d":"m0,20 3,0 C 7,10 10,0 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vmz-2"},["path",{"d":"M0,0 3,0 C 10,10 15,10 20,10 15,10 10,10 3,20 L 0,20","class":"s10"}],["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s1"}],["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"0mv-2"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s10"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"1mv-2"},["path",{"d":"M2.875,0 20,0 20,20 9,20 z","class":"s10"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"xmv-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,5 3.5,1.5","class":"s2"}],["path",{"d":"M0,10 4.5,5.5","class":"s2"}],["path",{"d":"M0,15 6,9","class":"s2"}],["path",{"d":"M0,20 4,16","class":"s2"}]],["g",{"id":"dmv-2"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s10"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"umv-2"},["path",{"d":"M3,0 20,0 20,20 9,20 z","class":"s10"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"zmv-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"m6,10 3,10 11,0","class":"s1"}],["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-3-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s6"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-4-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s7"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-5-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s8"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-2-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s6"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s10"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-2-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s10"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-2-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s10"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-2-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s10"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"arrow0"},["path",{"d":"m-12,-3 9,3 -9,3 c 1,-2 1,-4 0,-6 z","class":"s11"}],["path",{"d":"M0,0 -15,0","class":"s12"}]],["marker",{"id":"arrowhead","style":"fill:#0041c4","markerHeight":"7","markerWidth":"10","markerUnits":"strokeWidth","viewBox":"0 -4 11 8","refX":"15","refY":"0","orient":"auto"},["path",{"d":"M0 -4 11 0 0 4z"}]],["marker",{"id":"arrowtail","style":"fill:#0041c4","markerHeight":"7","markerWidth":"10","markerUnits":"strokeWidth","viewBox":"-11 -4 11 8","refX":"-15","refY":"0","orient":"auto"},["path",{"d":"M0 -4 -11 0 0 4z"}]]],["g",{"id":"waves"},["g",{"id":"lanes"}],["g",{"id":"groups"}]]];
+},{}],47:[function(require,module,exports){
+var WaveSkin=WaveSkin||{};WaveSkin.default=["svg",{"id":"svg","xmlns":"http://www.w3.org/2000/svg","xmlns:xlink":"http://www.w3.org/1999/xlink","height":"0"},["style",{"type":"text/css"},"text{font-size:11pt;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;fill-opacity:1;font-family:Helvetica}.muted{fill:#aaa}.warning{fill:#f6b900}.error{fill:#f60000}.info{fill:#0041c4}.success{fill:#00ab00}.h1{font-size:33pt;font-weight:bold}.h2{font-size:27pt;font-weight:bold}.h3{font-size:20pt;font-weight:bold}.h4{font-size:14pt;font-weight:bold}.h5{font-size:11pt;font-weight:bold}.h6{font-size:8pt;font-weight:bold}.s1{fill:none;stroke:#000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none}.s2{fill:none;stroke:#000;stroke-width:0.5;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none}.s3{color:#000;fill:none;stroke:#000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1, 3;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate}.s4{color:#000;fill:none;stroke:#000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible}.s5{fill:#fff;stroke:none}.s6{fill:#000;fill-opacity:1;stroke:none}.s7{color:#000;fill:#fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate}.s8{color:#000;fill:#ffffb4;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate}.s9{color:#000;fill:#ffe0b9;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate}.s10{color:#000;fill:#b9e0ff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate}.s11{color:#000;fill:#ccfdfe;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate}.s12{color:#000;fill:#cdfdc5;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate}.s13{color:#000;fill:#f0c1fb;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate}.s14{color:#000;fill:#f5c2c0;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate}.s15{fill:#0041c4;fill-opacity:1;stroke:none}.s16{fill:none;stroke:#0041c4;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none}"],["defs",["g",{"id":"socket"},["rect",{"y":"15","x":"6","height":"20","width":"20"}]],["g",{"id":"pclk"},["path",{"d":"M0,20 0,0 20,0","class":"s1"}]],["g",{"id":"nclk"},["path",{"d":"m0,0 0,20 20,0","class":"s1"}]],["g",{"id":"000"},["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"0m0"},["path",{"d":"m0,20 3,0 3,-10 3,10 11,0","class":"s1"}]],["g",{"id":"0m1"},["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"0mx"},["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 5,20","class":"s2"}],["path",{"d":"M20,0 4,16","class":"s2"}],["path",{"d":"M15,0 6,9","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"0md"},["path",{"d":"m8,20 10,0","class":"s3"}],["path",{"d":"m0,20 5,0","class":"s1"}]],["g",{"id":"0mu"},["path",{"d":"m0,20 3,0 C 7,10 10.107603,0 20,0","class":"s1"}]],["g",{"id":"0mz"},["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"111"},["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"1m0"},["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}]],["g",{"id":"1m1"},["path",{"d":"M0,0 3,0 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"1mx"},["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 6,9","class":"s2"}],["path",{"d":"M10,0 5,5","class":"s2"}],["path",{"d":"M3.5,1.5 5,0","class":"s2"}]],["g",{"id":"1md"},["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}]],["g",{"id":"1mu"},["path",{"d":"M0,0 5,0","class":"s1"}],["path",{"d":"M8,0 18,0","class":"s3"}]],["g",{"id":"1mz"},["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s1"}]],["g",{"id":"xxx"},["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,5 5,0","class":"s2"}],["path",{"d":"M0,10 10,0","class":"s2"}],["path",{"d":"M0,15 15,0","class":"s2"}],["path",{"d":"M0,20 20,0","class":"s2"}],["path",{"d":"M5,20 20,5","class":"s2"}],["path",{"d":"M10,20 20,10","class":"s2"}],["path",{"d":"m15,20 5,-5","class":"s2"}]],["g",{"id":"xm0"},["path",{"d":"M0,0 4,0 9,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,5 4,1","class":"s2"}],["path",{"d":"M0,10 5,5","class":"s2"}],["path",{"d":"M0,15 6,9","class":"s2"}],["path",{"d":"M0,20 7,13","class":"s2"}],["path",{"d":"M5,20 8,17","class":"s2"}]],["g",{"id":"xm1"},["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,20 4,20 9,0","class":"s1"}],["path",{"d":"M0,5 5,0","class":"s2"}],["path",{"d":"M0,10 9,1","class":"s2"}],["path",{"d":"M0,15 7,8","class":"s2"}],["path",{"d":"M0,20 5,15","class":"s2"}]],["g",{"id":"xmx"},["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,5 5,0","class":"s2"}],["path",{"d":"M0,10 10,0","class":"s2"}],["path",{"d":"M0,15 15,0","class":"s2"}],["path",{"d":"M0,20 20,0","class":"s2"}],["path",{"d":"M5,20 20,5","class":"s2"}],["path",{"d":"M10,20 20,10","class":"s2"}],["path",{"d":"m15,20 5,-5","class":"s2"}]],["g",{"id":"xmd"},["path",{"d":"m0,0 4,0 c 3,10 6,20 16,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,5 4,1","class":"s2"}],["path",{"d":"M0,10 5.5,4.5","class":"s2"}],["path",{"d":"M0,15 6.5,8.5","class":"s2"}],["path",{"d":"M0,20 8,12","class":"s2"}],["path",{"d":"m5,20 5,-5","class":"s2"}],["path",{"d":"m10,20 2.5,-2.5","class":"s2"}]],["g",{"id":"xmu"},["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"m0,20 4,0 C 7,10 10,0 20,0","class":"s1"}],["path",{"d":"M0,5 5,0","class":"s2"}],["path",{"d":"M0,10 10,0","class":"s2"}],["path",{"d":"M0,15 10,5","class":"s2"}],["path",{"d":"M0,20 6,14","class":"s2"}]],["g",{"id":"xmz"},["path",{"d":"m0,0 4,0 c 6,10 11,10 16,10","class":"s1"}],["path",{"d":"m0,20 4,0 C 10,10 15,10 20,10","class":"s1"}],["path",{"d":"M0,5 4.5,0.5","class":"s2"}],["path",{"d":"M0,10 6.5,3.5","class":"s2"}],["path",{"d":"M0,15 8.5,6.5","class":"s2"}],["path",{"d":"M0,20 11.5,8.5","class":"s2"}]],["g",{"id":"ddd"},["path",{"d":"m0,20 20,0","class":"s3"}]],["g",{"id":"dm0"},["path",{"d":"m0,20 10,0","class":"s3"}],["path",{"d":"m12,20 8,0","class":"s1"}]],["g",{"id":"dm1"},["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"dmx"},["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 5,20","class":"s2"}],["path",{"d":"M20,0 4,16","class":"s2"}],["path",{"d":"M15,0 6,9","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"dmd"},["path",{"d":"m0,20 20,0","class":"s3"}]],["g",{"id":"dmu"},["path",{"d":"m0,20 3,0 C 7,10 10.107603,0 20,0","class":"s1"}]],["g",{"id":"dmz"},["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"uuu"},["path",{"d":"M0,0 20,0","class":"s3"}]],["g",{"id":"um0"},["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}]],["g",{"id":"um1"},["path",{"d":"M0,0 10,0","class":"s3"}],["path",{"d":"m12,0 8,0","class":"s1"}]],["g",{"id":"umx"},["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 6,9","class":"s2"}],["path",{"d":"M10,0 5,5","class":"s2"}],["path",{"d":"M3.5,1.5 5,0","class":"s2"}]],["g",{"id":"umd"},["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}]],["g",{"id":"umu"},["path",{"d":"M0,0 20,0","class":"s3"}]],["g",{"id":"umz"},["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s4"}]],["g",{"id":"zzz"},["path",{"d":"m0,10 20,0","class":"s1"}]],["g",{"id":"zm0"},["path",{"d":"m0,10 6,0 3,10 11,0","class":"s1"}]],["g",{"id":"zm1"},["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"zmx"},["path",{"d":"m6,10 3,10 11,0","class":"s1"}],["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 6.5,8.5","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}]],["g",{"id":"zmd"},["path",{"d":"m0,10 7,0 c 3,5 8,10 13,10","class":"s1"}]],["g",{"id":"zmu"},["path",{"d":"m0,10 7,0 C 10,5 15,0 20,0","class":"s1"}]],["g",{"id":"zmz"},["path",{"d":"m0,10 20,0","class":"s1"}]],["g",{"id":"gap"},["path",{"d":"m7,-2 -4,0 c -5,0 -5,24 -10,24 l 4,0 C 2,22 2,-2 7,-2 z","class":"s5"}],["path",{"d":"M-7,22 C -2,22 -2,-2 3,-2","class":"s1"}],["path",{"d":"M-3,22 C 2,22 2,-2 7,-2","class":"s1"}]],["g",{"id":"Pclk"},["path",{"d":"M-3,12 0,3 3,12 C 1,11 -1,11 -3,12 z","class":"s6"}],["path",{"d":"M0,20 0,0 20,0","class":"s1"}]],["g",{"id":"Nclk"},["path",{"d":"M-3,8 0,17 3,8 C 1,9 -1,9 -3,8 z","class":"s6"}],["path",{"d":"m0,0 0,20 20,0","class":"s1"}]],["g",{"id":"0mv-2"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s7"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"1mv-2"},["path",{"d":"M2.875,0 20,0 20,20 9,20 z","class":"s7"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"xmv-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,5 3.5,1.5","class":"s2"}],["path",{"d":"M0,10 4.5,5.5","class":"s2"}],["path",{"d":"M0,15 6,9","class":"s2"}],["path",{"d":"M0,20 4,16","class":"s2"}]],["g",{"id":"dmv-2"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s7"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"umv-2"},["path",{"d":"M3,0 20,0 20,20 9,20 z","class":"s7"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"zmv-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"m6,10 3,10 11,0","class":"s1"}],["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"vvv-2"},["path",{"d":"M20,20 0,20 0,0 20,0","class":"s7"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vm0-2"},["path",{"d":"M0,20 0,0 3,0 9,20","class":"s7"}],["path",{"d":"M0,0 3,0 9,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vm1-2"},["path",{"d":"M0,0 0,20 3,20 9,0","class":"s7"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0","class":"s1"}]],["g",{"id":"vmx-2"},["path",{"d":"M0,0 0,20 3,20 6,10 3,0","class":"s7"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 7,8","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}]],["g",{"id":"vmd-2"},["path",{"d":"m0,0 0,20 20,0 C 10,20 7,10 3,0","class":"s7"}],["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vmu-2"},["path",{"d":"m0,0 0,20 3,0 C 7,10 10,0 20,0","class":"s7"}],["path",{"d":"m0,20 3,0 C 7,10 10,0 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vmz-2"},["path",{"d":"M0,0 3,0 C 10,10 15,10 20,10 15,10 10,10 3,20 L 0,20","class":"s7"}],["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s1"}],["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"0mv-3"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s8"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"1mv-3"},["path",{"d":"M2.875,0 20,0 20,20 9,20 z","class":"s8"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"xmv-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,5 3.5,1.5","class":"s2"}],["path",{"d":"M0,10 4.5,5.5","class":"s2"}],["path",{"d":"M0,15 6,9","class":"s2"}],["path",{"d":"M0,20 4,16","class":"s2"}]],["g",{"id":"dmv-3"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s8"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"umv-3"},["path",{"d":"M3,0 20,0 20,20 9,20 z","class":"s8"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"zmv-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"m6,10 3,10 11,0","class":"s1"}],["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"vvv-3"},["path",{"d":"M20,20 0,20 0,0 20,0","class":"s8"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vm0-3"},["path",{"d":"M0,20 0,0 3,0 9,20","class":"s8"}],["path",{"d":"M0,0 3,0 9,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vm1-3"},["path",{"d":"M0,0 0,20 3,20 9,0","class":"s8"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0","class":"s1"}]],["g",{"id":"vmx-3"},["path",{"d":"M0,0 0,20 3,20 6,10 3,0","class":"s8"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 7,8","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}]],["g",{"id":"vmd-3"},["path",{"d":"m0,0 0,20 20,0 C 10,20 7,10 3,0","class":"s8"}],["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vmu-3"},["path",{"d":"m0,0 0,20 3,0 C 7,10 10,0 20,0","class":"s8"}],["path",{"d":"m0,20 3,0 C 7,10 10,0 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vmz-3"},["path",{"d":"M0,0 3,0 C 10,10 15,10 20,10 15,10 10,10 3,20 L 0,20","class":"s8"}],["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s1"}],["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"0mv-4"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s9"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"1mv-4"},["path",{"d":"M2.875,0 20,0 20,20 9,20 z","class":"s9"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"xmv-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s9"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,5 3.5,1.5","class":"s2"}],["path",{"d":"M0,10 4.5,5.5","class":"s2"}],["path",{"d":"M0,15 6,9","class":"s2"}],["path",{"d":"M0,20 4,16","class":"s2"}]],["g",{"id":"dmv-4"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s9"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"umv-4"},["path",{"d":"M3,0 20,0 20,20 9,20 z","class":"s9"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"zmv-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s9"}],["path",{"d":"m6,10 3,10 11,0","class":"s1"}],["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"vvv-4"},["path",{"d":"M20,20 0,20 0,0 20,0","class":"s9"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vm0-4"},["path",{"d":"M0,20 0,0 3,0 9,20","class":"s9"}],["path",{"d":"M0,0 3,0 9,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vm1-4"},["path",{"d":"M0,0 0,20 3,20 9,0","class":"s9"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0","class":"s1"}]],["g",{"id":"vmx-4"},["path",{"d":"M0,0 0,20 3,20 6,10 3,0","class":"s9"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 7,8","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}]],["g",{"id":"vmd-4"},["path",{"d":"m0,0 0,20 20,0 C 10,20 7,10 3,0","class":"s9"}],["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vmu-4"},["path",{"d":"m0,0 0,20 3,0 C 7,10 10,0 20,0","class":"s9"}],["path",{"d":"m0,20 3,0 C 7,10 10,0 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vmz-4"},["path",{"d":"M0,0 3,0 C 10,10 15,10 20,10 15,10 10,10 3,20 L 0,20","class":"s9"}],["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s1"}],["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"0mv-5"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s10"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"1mv-5"},["path",{"d":"M2.875,0 20,0 20,20 9,20 z","class":"s10"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"xmv-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,5 3.5,1.5","class":"s2"}],["path",{"d":"M0,10 4.5,5.5","class":"s2"}],["path",{"d":"M0,15 6,9","class":"s2"}],["path",{"d":"M0,20 4,16","class":"s2"}]],["g",{"id":"dmv-5"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s10"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"umv-5"},["path",{"d":"M3,0 20,0 20,20 9,20 z","class":"s10"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"zmv-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"m6,10 3,10 11,0","class":"s1"}],["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"vvv-5"},["path",{"d":"M20,20 0,20 0,0 20,0","class":"s10"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vm0-5"},["path",{"d":"M0,20 0,0 3,0 9,20","class":"s10"}],["path",{"d":"M0,0 3,0 9,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vm1-5"},["path",{"d":"M0,0 0,20 3,20 9,0","class":"s10"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0","class":"s1"}]],["g",{"id":"vmx-5"},["path",{"d":"M0,0 0,20 3,20 6,10 3,0","class":"s10"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 7,8","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}]],["g",{"id":"vmd-5"},["path",{"d":"m0,0 0,20 20,0 C 10,20 7,10 3,0","class":"s10"}],["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vmu-5"},["path",{"d":"m0,0 0,20 3,0 C 7,10 10,0 20,0","class":"s10"}],["path",{"d":"m0,20 3,0 C 7,10 10,0 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vmz-5"},["path",{"d":"M0,0 3,0 C 10,10 15,10 20,10 15,10 10,10 3,20 L 0,20","class":"s10"}],["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s1"}],["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"0mv-6"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s11"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"1mv-6"},["path",{"d":"M2.875,0 20,0 20,20 9,20 z","class":"s11"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"xmv-6"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s11"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,5 3.5,1.5","class":"s2"}],["path",{"d":"M0,10 4.5,5.5","class":"s2"}],["path",{"d":"M0,15 6,9","class":"s2"}],["path",{"d":"M0,20 4,16","class":"s2"}]],["g",{"id":"dmv-6"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s11"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"umv-6"},["path",{"d":"M3,0 20,0 20,20 9,20 z","class":"s11"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"zmv-6"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s11"}],["path",{"d":"m6,10 3,10 11,0","class":"s1"}],["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"vvv-6"},["path",{"d":"M20,20 0,20 0,0 20,0","class":"s11"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vm0-6"},["path",{"d":"M0,20 0,0 3,0 9,20","class":"s11"}],["path",{"d":"M0,0 3,0 9,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vm1-6"},["path",{"d":"M0,0 0,20 3,20 9,0","class":"s11"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0","class":"s1"}]],["g",{"id":"vmx-6"},["path",{"d":"M0,0 0,20 3,20 6,10 3,0","class":"s11"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 7,8","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}]],["g",{"id":"vmd-6"},["path",{"d":"m0,0 0,20 20,0 C 10,20 7,10 3,0","class":"s11"}],["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vmu-6"},["path",{"d":"m0,0 0,20 3,0 C 7,10 10,0 20,0","class":"s11"}],["path",{"d":"m0,20 3,0 C 7,10 10,0 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vmz-6"},["path",{"d":"M0,0 3,0 C 10,10 15,10 20,10 15,10 10,10 3,20 L 0,20","class":"s11"}],["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s1"}],["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"0mv-7"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s12"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"1mv-7"},["path",{"d":"M2.875,0 20,0 20,20 9,20 z","class":"s12"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"xmv-7"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s12"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,5 3.5,1.5","class":"s2"}],["path",{"d":"M0,10 4.5,5.5","class":"s2"}],["path",{"d":"M0,15 6,9","class":"s2"}],["path",{"d":"M0,20 4,16","class":"s2"}]],["g",{"id":"dmv-7"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s12"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"umv-7"},["path",{"d":"M3,0 20,0 20,20 9,20 z","class":"s12"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"zmv-7"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s12"}],["path",{"d":"m6,10 3,10 11,0","class":"s1"}],["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"vvv-7"},["path",{"d":"M20,20 0,20 0,0 20,0","class":"s12"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vm0-7"},["path",{"d":"M0,20 0,0 3,0 9,20","class":"s12"}],["path",{"d":"M0,0 3,0 9,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vm1-7"},["path",{"d":"M0,0 0,20 3,20 9,0","class":"s12"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0","class":"s1"}]],["g",{"id":"vmx-7"},["path",{"d":"M0,0 0,20 3,20 6,10 3,0","class":"s12"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 7,8","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}]],["g",{"id":"vmd-7"},["path",{"d":"m0,0 0,20 20,0 C 10,20 7,10 3,0","class":"s12"}],["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vmu-7"},["path",{"d":"m0,0 0,20 3,0 C 7,10 10,0 20,0","class":"s12"}],["path",{"d":"m0,20 3,0 C 7,10 10,0 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vmz-7"},["path",{"d":"M0,0 3,0 C 10,10 15,10 20,10 15,10 10,10 3,20 L 0,20","class":"s12"}],["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s1"}],["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"0mv-8"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s13"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"1mv-8"},["path",{"d":"M2.875,0 20,0 20,20 9,20 z","class":"s13"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"xmv-8"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s13"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,5 3.5,1.5","class":"s2"}],["path",{"d":"M0,10 4.5,5.5","class":"s2"}],["path",{"d":"M0,15 6,9","class":"s2"}],["path",{"d":"M0,20 4,16","class":"s2"}]],["g",{"id":"dmv-8"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s13"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"umv-8"},["path",{"d":"M3,0 20,0 20,20 9,20 z","class":"s13"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"zmv-8"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s13"}],["path",{"d":"m6,10 3,10 11,0","class":"s1"}],["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"vvv-8"},["path",{"d":"M20,20 0,20 0,0 20,0","class":"s13"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vm0-8"},["path",{"d":"M0,20 0,0 3,0 9,20","class":"s13"}],["path",{"d":"M0,0 3,0 9,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vm1-8"},["path",{"d":"M0,0 0,20 3,20 9,0","class":"s13"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0","class":"s1"}]],["g",{"id":"vmx-8"},["path",{"d":"M0,0 0,20 3,20 6,10 3,0","class":"s13"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 7,8","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}]],["g",{"id":"vmd-8"},["path",{"d":"m0,0 0,20 20,0 C 10,20 7,10 3,0","class":"s13"}],["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vmu-8"},["path",{"d":"m0,0 0,20 3,0 C 7,10 10,0 20,0","class":"s13"}],["path",{"d":"m0,20 3,0 C 7,10 10,0 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vmz-8"},["path",{"d":"M0,0 3,0 C 10,10 15,10 20,10 15,10 10,10 3,20 L 0,20","class":"s13"}],["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s1"}],["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"0mv-9"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s14"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"1mv-9"},["path",{"d":"M2.875,0 20,0 20,20 9,20 z","class":"s14"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"xmv-9"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s14"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,5 3.5,1.5","class":"s2"}],["path",{"d":"M0,10 4.5,5.5","class":"s2"}],["path",{"d":"M0,15 6,9","class":"s2"}],["path",{"d":"M0,20 4,16","class":"s2"}]],["g",{"id":"dmv-9"},["path",{"d":"M9,0 20,0 20,20 3,20 z","class":"s14"}],["path",{"d":"M3,20 9,0 20,0","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"umv-9"},["path",{"d":"M3,0 20,0 20,20 9,20 z","class":"s14"}],["path",{"d":"m3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"zmv-9"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s14"}],["path",{"d":"m6,10 3,10 11,0","class":"s1"}],["path",{"d":"M0,10 6,10 9,0 20,0","class":"s1"}]],["g",{"id":"vvv-9"},["path",{"d":"M20,20 0,20 0,0 20,0","class":"s14"}],["path",{"d":"m0,20 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vm0-9"},["path",{"d":"M0,20 0,0 3,0 9,20","class":"s14"}],["path",{"d":"M0,0 3,0 9,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vm1-9"},["path",{"d":"M0,0 0,20 3,20 9,0","class":"s14"}],["path",{"d":"M0,0 20,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0","class":"s1"}]],["g",{"id":"vmx-9"},["path",{"d":"M0,0 0,20 3,20 6,10 3,0","class":"s14"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}],["path",{"d":"m20,15 -5,5","class":"s2"}],["path",{"d":"M20,10 10,20","class":"s2"}],["path",{"d":"M20,5 8,17","class":"s2"}],["path",{"d":"M20,0 7,13","class":"s2"}],["path",{"d":"M15,0 7,8","class":"s2"}],["path",{"d":"M10,0 9,1","class":"s2"}]],["g",{"id":"vmd-9"},["path",{"d":"m0,0 0,20 20,0 C 10,20 7,10 3,0","class":"s14"}],["path",{"d":"m0,0 3,0 c 4,10 7,20 17,20","class":"s1"}],["path",{"d":"m0,20 20,0","class":"s1"}]],["g",{"id":"vmu-9"},["path",{"d":"m0,0 0,20 3,0 C 7,10 10,0 20,0","class":"s14"}],["path",{"d":"m0,20 3,0 C 7,10 10,0 20,0","class":"s1"}],["path",{"d":"M0,0 20,0","class":"s1"}]],["g",{"id":"vmz-9"},["path",{"d":"M0,0 3,0 C 10,10 15,10 20,10 15,10 10,10 3,20 L 0,20","class":"s14"}],["path",{"d":"m0,0 3,0 c 7,10 12,10 17,10","class":"s1"}],["path",{"d":"m0,20 3,0 C 10,10 15,10 20,10","class":"s1"}]],["g",{"id":"vmv-2-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s7"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-3-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s8"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-4-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s9"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-5-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s10"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-6-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s11"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-7-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s12"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-8-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s13"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-9-2"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s7"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s14"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-2-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s7"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-3-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s8"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-4-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s9"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-5-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s10"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-6-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s11"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-7-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s12"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-8-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s13"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-9-3"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s8"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s14"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-2-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s9"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s7"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-3-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s9"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s8"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-4-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s9"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s9"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-5-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s9"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s10"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-6-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s9"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s11"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-7-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s9"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s12"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-8-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s9"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s13"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-9-4"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s9"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s14"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-2-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s7"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-3-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s8"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-4-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s9"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-5-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s10"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-6-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s11"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-7-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s12"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-8-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s13"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-9-5"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s10"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s14"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-2-6"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s11"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s7"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-3-6"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s11"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s8"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-4-6"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s11"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s9"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-5-6"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s11"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s10"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-6-6"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s11"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s11"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-7-6"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s11"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s12"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-8-6"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s11"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s13"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-9-6"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s11"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s14"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-2-7"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s12"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s7"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-3-7"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s12"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s8"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-4-7"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s12"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s9"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-5-7"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s12"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s10"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-6-7"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s12"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s11"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-7-7"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s12"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s12"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-8-7"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s12"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s13"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-9-7"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s12"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s14"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-2-8"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s13"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s7"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-3-8"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s13"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s8"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-4-8"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s13"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s9"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-5-8"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s13"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s10"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-6-8"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s13"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s11"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-7-8"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s13"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s12"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-8-8"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s13"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s13"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-9-8"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s13"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s14"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-2-9"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s14"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s7"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-3-9"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s14"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s8"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-4-9"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s14"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s9"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-5-9"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s14"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s10"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-6-9"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s14"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s11"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-7-9"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s14"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s12"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-8-9"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s14"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s13"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"vmv-9-9"},["path",{"d":"M9,0 20,0 20,20 9,20 6,10 z","class":"s14"}],["path",{"d":"M3,0 0,0 0,20 3,20 6,10 z","class":"s14"}],["path",{"d":"m0,0 3,0 6,20 11,0","class":"s1"}],["path",{"d":"M0,20 3,20 9,0 20,0","class":"s1"}]],["g",{"id":"arrow0"},["path",{"d":"m-12,-3 9,3 -9,3 c 1,-2 1,-4 0,-6 z","class":"s15"}],["path",{"d":"M0,0 -15,0","class":"s16"}]],["marker",{"id":"arrowhead","style":"fill:#0041c4","markerHeight":"7","markerWidth":"10","markerUnits":"strokeWidth","viewBox":"0 -4 11 8","refX":"15","refY":"0","orient":"auto"},["path",{"d":"M0 -4 11 0 0 4z"}]],["marker",{"id":"arrowtail","style":"fill:#0041c4","markerHeight":"7","markerWidth":"10","markerUnits":"strokeWidth","viewBox":"-11 -4 11 8","refX":"-15","refY":"0","orient":"auto"},["path",{"d":"M0 -4 -11 0 0 4z"}]]],["g",{"id":"waves"},["g",{"id":"lanes"}],["g",{"id":"groups"}]]];
 try { module.exports = WaveSkin; } catch(err) {}
+
 
 },{}]},{},[2]);
 
