@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build_v": "datasheet -i ./node_modules/riscv-v-spec/v-spec.adoc -o public/riscv-v-spec/riscv-v-spec.pdf",
-    "build": "npm run build_v && cp index.html public/"
+    "build": "npm run build_v && sleep 5 && cp index.html public/"
   },
   "repository": {
     "type": "git",
